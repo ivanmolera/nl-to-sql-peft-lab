@@ -37,35 +37,35 @@ BENCHMARK_MODES = [
     {
         "id": "zero-shot",
         "label": "Zero-shot baseline",
-        "description": "Modelos base sin fine-tuning",
+        "description": "Base models without fine-tuning",
         "result_path": REAL_RESULTS_INDEX,
         "fallback_path": DEMO_RESULTS,
     },
     {
         "id": "qlora",
         "label": "QLoRA",
-        "description": "Adaptadores LoRA con cuantizacion 4-bit",
+        "description": "LoRA adapters with 4-bit quantization",
         "result_path": ROOT_DIR / "benchmark_results" / "qlora" / "qlora_wikisql_index.json",
         "fallback_path": None,
     },
     {
         "id": "bitfit",
         "label": "BitFit",
-        "description": "Fine-tuning solo de bias",
+        "description": "Bias-only fine-tuning",
         "result_path": ROOT_DIR / "benchmark_results" / "bitfit" / "bitfit_wikisql_index.json",
         "fallback_path": None,
     },
     {
         "id": "prefix-tuning",
         "label": "Prefix Tuning",
-        "description": "Prefijos virtuales entrenables",
+        "description": "Trainable virtual prefix vectors",
         "result_path": ROOT_DIR / "benchmark_results" / "prefix_tuning" / "prefix_tuning_wikisql_index.json",
         "fallback_path": None,
     },
     {
         "id": "ia3",
         "label": "IA3",
-        "description": "Escalado aprendido de activaciones",
+        "description": "Learned activation scaling",
         "result_path": ROOT_DIR / "benchmark_results" / "ia3" / "ia3_wikisql_index.json",
         "fallback_path": None,
     },
@@ -106,7 +106,7 @@ def benchmarks(mode: str = "zero-shot") -> dict[str, Any]:
             "benchmark": pending_benchmark_metadata(mode_config),
             "dataset": None,
             "models": [],
-            "message": "Resultados pendientes de generar",
+            "message": "Results pending",
         }
 
     payload = json.loads(path.read_text(encoding="utf-8"))
@@ -308,9 +308,9 @@ def benchmark_metadata_from_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "latency_seconds_per_example",
         ],
         "evaluation_notes": [
-            "Exact match compara SQL normalizado contra la referencia WikiSQL.",
-            "Valid SQL valida que la consulta generada pueda ejecutarse sobre la tabla del ejemplo.",
-            "Execution match compara el resultado de ejecutar el SQL generado contra el SQL de referencia.",
+            "Exact match compares normalized SQL against the WikiSQL reference.",
+            "Valid SQL checks whether the generated query can run against the example table.",
+            "Execution match compares generated SQL results against reference SQL results.",
         ],
     }
 

@@ -2,7 +2,7 @@
   "id": "smollm2-135m-instruct",
   "name": "HuggingFaceTB/SmolLM2-135M-Instruct",
   "architecture": "causal",
-  "role": "LLM decoder-only generalista ultracompacto",
+  "role": "Ultra-compact generalist decoder-only LLM",
   "runtime": {
     "generated_at": "2026-04-29T17:51:54.152884+00:00",
     "runtime": "docker",

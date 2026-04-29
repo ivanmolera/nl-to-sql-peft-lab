@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -10,82 +10,119 @@
     <div class="app-shell">
       <header class="topbar">
         <div>
-          <p class="eyebrow">Baseline zero-shot</p>
+          <p class="eyebrow">Zero-shot baseline</p>
           <h1>NL-to-SQL PEFT Lab</h1>
           <p class="subtitle">
-            Comparativa de técnicas PEFT para NL-to-SQL en modelos generativos pequeños
+            PEFT technique comparison for NL-to-SQL on small generative models
           </p>
         </div>
-        <div class="status-pill" id="result-source">Cargando resultados</div>
+        <div class="status-pill" id="result-source">Loading results</div>
       </header>
 
       <main>
         <section class="mode-strip">
-          <label class="field mode-field">
-            <span>Resultados</span>
-            <select id="benchmark-mode-select"></select>
-          </label>
-          <p id="benchmark-mode-description">Cargando resultados...</p>
+          <div>
+            <span>Benchmark run</span>
+            <div class="mode-tabs" id="benchmark-mode-tabs"></div>
+          </div>
+          <p id="benchmark-mode-description">Loading benchmark results...</p>
         </section>
 
-        <section class="metrics-band" id="leaderboard"></section>
+        <section class="analysis-section">
+          <div class="section-head">
+            <h2>Comparative Analysis</h2>
+          </div>
+          <section class="metrics-band" id="leaderboard"></section>
+          <div class="charts-grid">
+            <div class="panel chart-panel">
+              <h3>Execution Accuracy</h3>
+              <div id="chart-exec" class="bar-chart"></div>
+            </div>
+            <div class="panel chart-panel">
+              <h3>Valid SQL</h3>
+              <div id="chart-valid" class="bar-chart"></div>
+            </div>
+            <div class="panel chart-panel">
+              <h3>Latency per Example</h3>
+              <div id="chart-latency" class="bar-chart latency"></div>
+            </div>
+          </div>
+          <div class="panel benchmark-panel">
+            <div>
+              <h3>Benchmark Details</h3>
+              <p id="benchmark-summary">Loading benchmark configuration...</p>
+            </div>
+            <dl id="benchmark-grid"></dl>
+          </div>
+          <div class="panel runtime-panel">
+            <div>
+              <h3>Runtime Environment</h3>
+              <p id="runtime-summary">Loading reproducibility metadata...</p>
+            </div>
+            <dl id="runtime-grid"></dl>
+          </div>
+        </section>
 
         <section class="workspace">
-          <aside class="panel controls-panel">
+          <section class="panel controls-panel">
             <div class="panel-head">
-              <h2>Playground WikiSQL</h2>
-              <p>Elige un modelo base y una pregunta real del split de validación.</p>
+              <h2>WikiSQL Playground</h2>
+              <p>Choose a model and a real validation example to generate SQL from natural language.</p>
             </div>
 
-            <label class="field">
-              <span>Modelo</span>
-              <select id="model-select"></select>
-            </label>
+            <div class="playground-grid">
+              <div class="playground-controls">
+                <label class="field">
+                  <span>Model</span>
+                  <select id="model-select"></select>
+                </label>
 
-            <label class="field">
-              <span>Ejemplo WikiSQL</span>
-              <select id="example-select"></select>
-            </label>
+                <label class="field">
+                  <span>WikiSQL Example</span>
+                  <select id="example-select"></select>
+                </label>
 
-            <div class="question-box">
-              <span>Pregunta</span>
-              <p id="question-text">Cargando ejemplo...</p>
-            </div>
+                <div class="question-box">
+                  <span>Question</span>
+                  <p id="question-text">Loading example...</p>
+                </div>
 
-            <div class="table-preview">
-              <div class="preview-head">
-                <span>Tabla</span>
-                <button type="button" class="icon-button" id="reload-examples" title="Cargar más ejemplos">
-                  ↻
+                <button type="button" class="primary-action" id="run-button">
+                  Generate SQL
                 </button>
               </div>
-              <div class="table-scroll">
-                <table id="example-table"></table>
+
+              <div class="table-preview">
+                <div class="preview-head">
+                  <span>Table</span>
+                  <button type="button" class="icon-button" id="reload-examples" title="Load more examples">
+                    ↻
+                  </button>
+                </div>
+                <div class="table-scroll">
+                  <table id="example-table"></table>
+                </div>
               </div>
             </div>
-
-            <button type="button" class="primary-action" id="run-button">
-              Generar SQL
-            </button>
-          </aside>
+          </section>
 
           <section class="panel result-panel">
             <div class="panel-head inline">
               <div>
-                <h2>Resultado del modelo</h2>
-                <p id="run-meta">Sin ejecución todavía</p>
+                <h2>Model Result</h2>
+                <p id="run-meta">No run yet</p>
               </div>
-              <div class="verdict" id="verdict">Pendiente</div>
+              <div class="verdict" id="verdict">Pending</div>
             </div>
 
             <div class="comparison-grid">
               <div class="sql-block">
-                <span>SQL generado</span>
-                <pre id="prediction-sql">-- Ejecuta un modelo para ver la predicción</pre>
+                <span>Generated SQL</span>
+                <pre id="prediction-sql">-- Run a model to see the prediction</pre>
               </div>
               <div class="sql-block">
-                <span>SQL esperado WikiSQL</span>
-                <pre id="reference-sql">-- Selecciona un ejemplo</pre>
+                <span>Expected WikiSQL SQL</span>
+                <pre id="reference-sql">-- Select an example</pre>
               </div>
             </div>
 
@@ -95,7 +132,7 @@
                 <strong>--</strong>
               </div>
               <div class="check-card" id="check-valid">
-                <span>SQL válido</span>
+                <span>Valid SQL</span>
                 <strong>--</strong>
               </div>
               <div class="check-card" id="check-exec">
@@ -104,40 +141,6 @@
               </div>
             </div>
           </section>
-        </section>
-
-        <section class="analysis-section">
-          <div class="section-head">
-            <h2>Análisis comparativo</h2>
-          </div>
-          <div class="panel benchmark-panel">
-            <div>
-              <h3>Detalles del benchmark</h3>
-              <p id="benchmark-summary">Cargando configuración del benchmark...</p>
-            </div>
-            <dl id="benchmark-grid"></dl>
-          </div>
-          <div class="panel runtime-panel">
-            <div>
-              <h3>Entorno de ejecución</h3>
-              <p id="runtime-summary">Cargando metadatos de reproducibilidad...</p>
-            </div>
-            <dl id="runtime-grid"></dl>
-          </div>
-          <div class="charts-grid">
-            <div class="panel chart-panel">
-              <h3>Execution accuracy</h3>
-              <div id="chart-exec" class="bar-chart"></div>
-            </div>
-            <div class="panel chart-panel">
-              <h3>Validez SQL</h3>
-              <div id="chart-valid" class="bar-chart"></div>
-            </div>
-            <div class="panel chart-panel">
-              <h3>Latencia por ejemplo</h3>
-              <div id="chart-latency" class="bar-chart latency"></div>
-            </div>
-          </div>
         </section>
       </main>
     </div>

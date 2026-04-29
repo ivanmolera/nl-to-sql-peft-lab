@@ -2,7 +2,7 @@
   "id": "qwen2.5-coder-0.5b-instruct",
   "name": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
   "architecture": "causal",
-  "role": "LLM decoder-only especializado en codigo",
+  "role": "Code-specialized decoder-only LLM",
   "runtime": {
     "generated_at": "2026-04-29T17:51:54.152884+00:00",
     "runtime": "docker",

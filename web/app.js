@@ -2,11 +2,12 @@ const state = {
   models: [],
   examples: [],
   exampleOffset: 0,
+  selectedMode: "zero-shot",
 };
 
 const els = {
   source: document.querySelector("#result-source"),
-  modeSelect: document.querySelector("#benchmark-mode-select"),
+  modeTabs: document.querySelector("#benchmark-mode-tabs"),
   modeDescription: document.querySelector("#benchmark-mode-description"),
   leaderboard: document.querySelector("#leaderboard"),
   modelSelect: document.querySelector("#model-select"),
@@ -57,26 +58,39 @@ function shortName(name) {
 
 async function loadBenchmarkModes() {
   const data = await api("/api/benchmark-modes");
-  els.modeSelect.innerHTML = data.modes
+  els.modeTabs.innerHTML = data.modes
     .map((mode) => {
-      const suffix = mode.available ? "" : " · pendiente";
-      return `<option value="${mode.id}">${mode.label}${suffix}</option>`;
+      const active = mode.id === state.selectedMode ? " active" : "";
+      const unavailable = mode.available ? "" : " pending";
+      const status = mode.available ? "Available" : "Pending";
+      return `
+        <button
+          type="button"
+          class="mode-tab${active}${unavailable}"
+          data-mode="${mode.id}"
+          aria-pressed="${mode.id === state.selectedMode}"
+          title="${status}: ${mode.description}"
+        >
+          <span>${mode.label}</span>
+          <small>${status}</small>
+        </button>
+      `;
     })
     .join("");
 }
 
 async function loadBenchmarks() {
-  const mode = els.modeSelect.value || "zero-shot";
+  const mode = state.selectedMode || "zero-shot";
   const data = await api(`/api/benchmarks?mode=${encodeURIComponent(mode)}`);
   els.modeDescription.textContent = data.available
     ? data.description || ""
-    : `${data.description || ""} · resultados pendientes de generar`;
+    : `${data.description || ""} · results pending`;
   state.models = data.models;
   els.source.textContent = data.is_demo
-    ? "Resultados demo"
+    ? "Demo results"
     : data.source
-      ? `Resultados: ${data.source}`
-      : "Sin resultados";
+      ? `Results: ${data.source}`
+      : "No results";
 
   if (!data.available || !data.models.length) {
     els.leaderboard.innerHTML = `
@@ -84,7 +98,7 @@ async function loadBenchmarks() {
         <header>
           <div>
             <h2>${data.label || "Benchmark"}</h2>
-            <small>${data.message || "Resultados pendientes de generar"}</small>
+            <small>${data.message || "Results pending"}</small>
           </div>
         </header>
       </article>
@@ -110,8 +124,8 @@ async function loadBenchmarks() {
             <div class="score">${pct(metrics.execution_accuracy)}</div>
           </header>
           <div class="metric-row"><span>Exact match</span><strong>${pct(metrics.exact_match)}</strong></div>
-          <div class="metric-row"><span>SQL válido</span><strong>${pct(metrics.sql_validity)}</strong></div>
-          <div class="metric-row"><span>Latencia</span><strong>${seconds(metrics.latency_seconds_per_example)}</strong></div>
+          <div class="metric-row"><span>Valid SQL</span><strong>${pct(metrics.sql_validity)}</strong></div>
+          <div class="metric-row"><span>Latency</span><strong>${seconds(metrics.latency_seconds_per_example)}</strong></div>
         </article>
       `;
     })
@@ -126,7 +140,7 @@ async function loadBenchmarks() {
 
 function renderChart(target, models, metric, formatter) {
   if (!models.length) {
-    target.innerHTML = `<p class="empty-state">Sin datos disponibles.</p>`;
+    target.innerHTML = `<p class="empty-state">No data available.</p>`;
     return;
   }
   target.innerHTML = models
@@ -145,7 +159,7 @@ function renderChart(target, models, metric, formatter) {
 
 function renderLatencyChart(target, models) {
   if (!models.length) {
-    target.innerHTML = `<p class="empty-state">Sin datos disponibles.</p>`;
+    target.innerHTML = `<p class="empty-state">No data available.</p>`;
     return;
   }
   const maxLatency = Math.max(
@@ -168,14 +182,14 @@ function renderLatencyChart(target, models) {
 
 function renderRuntime(runtime = {}) {
   const cloudRun = runtime.cloud_run || {};
-  els.runtimeSummary.textContent = `${runtime.runtime || "runtime"} · ${runtime.device || "device"} · ${runtime.generated_at || "sin timestamp"}`;
+  els.runtimeSummary.textContent = `${runtime.runtime || "runtime"} · ${runtime.device || "device"} · ${runtime.generated_at || "no timestamp"}`;
   const rows = [
-    ["Imagen", runtime.container_image],
-    ["Plataforma", runtime.platform],
+    ["Image", runtime.container_image],
+    ["Platform", runtime.platform],
     ["Python", runtime.python_version],
     ["PyTorch", runtime.torch_version],
-    ["CUDA", runtime.cuda_available ? `Sí (${runtime.cuda_version || "n/a"})` : "No"],
-    ["Dispositivo", runtime.device],
+    ["CUDA", runtime.cuda_available ? `Yes (${runtime.cuda_version || "n/a"})` : "No"],
+    ["Device", runtime.device],
     ["CPU", runtime.cpu_count],
     ["RAM", runtime.memory_total_gb ? `${runtime.memory_total_gb} GB` : "n/a"],
     ["Cloud Run", cloudRun.revision || cloudRun.service || "n/a"],
@@ -195,7 +209,7 @@ function renderBenchmarkDetails(benchmark = {}, dataset = {}) {
       : null
   );
   const generationMode = generation.do_sample === false
-    ? "determinista"
+    ? "deterministic"
     : generation.temperature !== undefined
       ? `temperature ${generation.temperature}`
       : "n/a";
@@ -207,20 +221,20 @@ function renderBenchmarkDetails(benchmark = {}, dataset = {}) {
   ].filter(Boolean).join(" · ");
 
   const rows = [
-    ["Tarea", benchmark.task || "NL-to-SQL"],
+    ["Task", benchmark.task || "NL-to-SQL"],
     ["Runner", benchmark.runner],
     ["Framework", benchmark.framework || benchmark.planned_framework],
     ["Dataset", benchmark.dataset || dataset?.name],
     ["Split", benchmark.split || dataset?.split],
-    ["Muestra", formatNullable(sampleSize)],
-    ["Llamadas/modelo", formatNullable(callsPerModel)],
-    ["Llamadas totales", formatNullable(totalCalls)],
-    ["Modelos", formatNullable(benchmark.models_evaluated)],
-    ["Muestreo", benchmark.sample_strategy],
+    ["Sample size", formatNullable(sampleSize)],
+    ["Calls/model", formatNullable(callsPerModel)],
+    ["Total calls", formatNullable(totalCalls)],
+    ["Models", formatNullable(benchmark.models_evaluated)],
+    ["Sampling", benchmark.sample_strategy],
     ["Seed", formatNullable(benchmark.seed)],
     ["Max tokens", formatNullable(benchmark.max_new_tokens)],
-    ["Max entrada", formatNullable(benchmark.max_source_length)],
-    ["Generación", generationMode],
+    ["Max input", formatNullable(benchmark.max_source_length)],
+    ["Generation", generationMode],
   ];
   els.benchmarkGrid.innerHTML = rows
     .map(([label, value]) => `<div><dt>${label}</dt><dd>${value ?? "n/a"}</dd></div>`)
@@ -277,9 +291,9 @@ function renderTable(example) {
 }
 
 function resetResult() {
-  els.prediction.textContent = "-- Ejecuta un modelo para ver la predicción";
-  els.runMeta.textContent = "Sin ejecución todavía";
-  els.verdict.textContent = "Pendiente";
+  els.prediction.textContent = "-- Run a model to see the prediction";
+  els.runMeta.textContent = "No run yet";
+  els.verdict.textContent = "Pending";
   els.verdict.className = "verdict";
   setCheck(els.checkExact, "--", null);
   setCheck(els.checkValid, "--", null);
@@ -298,8 +312,8 @@ async function runGeneration() {
   if (!example) return;
 
   els.run.disabled = true;
-  els.run.textContent = "Generando...";
-  els.runMeta.textContent = "Cargando modelo y generando SQL";
+  els.run.textContent = "Generating...";
+  els.runMeta.textContent = "Loading model and generating SQL";
 
   try {
     const result = await api("/api/generate", {
@@ -310,29 +324,35 @@ async function runGeneration() {
       }),
     });
 
-    els.prediction.textContent = result.prediction || "-- Sin salida";
+    els.prediction.textContent = result.prediction || "-- No output";
     els.reference.textContent = result.reference;
     els.runMeta.textContent = `${shortName(result.model.name)} · ${seconds(result.latency_seconds)}`;
 
     const ok = result.execution_match;
-    els.verdict.textContent = ok ? "Coincide" : "No coincide";
+    els.verdict.textContent = ok ? "Match" : "Mismatch";
     els.verdict.className = `verdict ${ok ? "ok" : "bad"}`;
-    setCheck(els.checkExact, result.exact_match ? "Sí" : "No", result.exact_match);
-    setCheck(els.checkValid, result.valid_sql ? "Sí" : "No", result.valid_sql);
-    setCheck(els.checkExec, result.execution_match ? "Sí" : "No", result.execution_match);
+    setCheck(els.checkExact, result.exact_match ? "Yes" : "No", result.exact_match);
+    setCheck(els.checkValid, result.valid_sql ? "Yes" : "No", result.valid_sql);
+    setCheck(els.checkExec, result.execution_match ? "Yes" : "No", result.execution_match);
   } catch (error) {
     els.prediction.textContent = `-- Error: ${error.message}`;
-    els.runMeta.textContent = "No se pudo completar la inferencia";
+    els.runMeta.textContent = "Inference could not be completed";
     els.verdict.textContent = "Error";
     els.verdict.className = "verdict bad";
   } finally {
     els.run.disabled = false;
-    els.run.textContent = "Generar SQL";
+    els.run.textContent = "Generate SQL";
   }
 }
 
 function bindEvents() {
-  els.modeSelect.addEventListener("change", loadBenchmarks);
+  els.modeTabs.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-mode]");
+    if (!button) return;
+    state.selectedMode = button.dataset.mode;
+    await loadBenchmarkModes();
+    await loadBenchmarks();
+  });
   els.exampleSelect.addEventListener("change", renderSelectedExample);
   els.run.addEventListener("click", runGeneration);
   els.reload.addEventListener("click", async () => {

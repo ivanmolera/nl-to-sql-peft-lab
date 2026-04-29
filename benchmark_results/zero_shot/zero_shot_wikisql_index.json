@@ -103,7 +103,7 @@
       "id": "t5-small",
       "name": "google-t5/t5-small",
       "architecture": "seq2seq",
-      "role": "T5 puro encoder-decoder",
+      "role": "Pure T5 encoder-decoder",
       "runtime": {
         "generated_at": "2026-04-29T17:42:01.262637+00:00",
         "runtime": "unknown",
@@ -411,7 +411,7 @@
       "id": "smollm2-135m-instruct",
       "name": "HuggingFaceTB/SmolLM2-135M-Instruct",
       "architecture": "causal",
-      "role": "LLM decoder-only generalista ultracompacto",
+      "role": "Ultra-compact generalist decoder-only LLM",
       "runtime": {
         "generated_at": "2026-04-29T17:44:37.655062+00:00",
         "runtime": "unknown",
@@ -719,7 +719,7 @@
       "id": "qwen2.5-coder-0.5b-instruct",
       "name": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
       "architecture": "causal",
-      "role": "LLM decoder-only especializado en codigo",
+      "role": "Code-specialized decoder-only LLM",
       "runtime": {
         "generated_at": "2026-04-29T17:50:29.843826+00:00",
         "runtime": "unknown",

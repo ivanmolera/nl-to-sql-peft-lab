@@ -2,7 +2,7 @@
   "id": "t5-small",
   "name": "google-t5/t5-small",
   "architecture": "seq2seq",
-  "role": "T5 puro encoder-decoder",
+  "role": "Pure T5 encoder-decoder",
   "runtime": {
     "generated_at": "2026-04-29T17:51:54.152884+00:00",
     "runtime": "docker",
