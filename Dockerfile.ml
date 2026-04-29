@@ -6,6 +6,8 @@ ENV PYTHONUNBUFFERED=1
 ENV HF_HOME=/opt/hf-cache
 ENV TRANSFORMERS_CACHE=/opt/hf-cache/hub
 ENV HF_DATASETS_CACHE=/opt/hf-cache/datasets
+ENV APP_RUNTIME=docker
+ENV APP_DOCKER_IMAGE=europe-west1-docker.pkg.dev/nl-sql-peft-lab-ivan-0429/nl-to-sql-peft-lab/ml:latest
 
 WORKDIR /app
 

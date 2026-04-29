@@ -124,6 +124,59 @@ python -m peft_lab.evaluate_zero_shot \
   --max-examples 8
 ```
 
+## Zero-Shot Benchmark
+
+Use the benchmark script for the comparative baseline that feeds the dashboard:
+
+```bash
+python -m peft_lab.benchmark_zero_shot --config configs/zero_shot_wikisql_benchmark.yaml
+```
+
+The current runner is a project-specific benchmark script so the first dashboard
+can capture NL-to-SQL metrics that are not standard multiple-choice metrics.
+The planned framework integration is:
+
+- Primary: [Hugging Face LightEval](https://huggingface.co/docs/lighteval/en/index), using a custom `wikisql_nl_to_sql` task and custom metrics.
+- Research baseline alternative: [EleutherAI lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness), also with a custom WikiSQL task.
+- Heavier suite alternatives for later comparison: [HELM](https://github.com/stanford-crfm/helm) and [OpenCompass](https://github.com/open-compass/opencompass).
+
+Recommended sample sizes:
+
+- `30-50` examples for smoke tests.
+- `300` examples for fast iteration.
+- `1000` examples for a stable portfolio comparison.
+- Full validation split (`8421`) only for a final, publication-style run.
+
+The benchmark records per-example predictions and aggregated metrics:
+
+- Exact match
+- SQL validity
+- Execution accuracy
+- Failure, empty-output, and non-SQL rates
+- Model load time
+- Mean, p50, and p95 generation latency
+- Evaluation latency
+- Throughput
+- Runtime metadata: Docker image, platform, Python, PyTorch, CUDA/device, CPU and RAM.
+- Benchmark metadata: task, dataset split, sample size, calls per model, total model calls, sampling seed, prompt length, generation limits, and metric definitions.
+
+It writes one file per model plus an index consumed by the web app:
+
+```text
+benchmark_results/zero_shot/zero_shot_wikisql_t5-small.json
+benchmark_results/zero_shot/zero_shot_wikisql_smollm2-135m-instruct.json
+benchmark_results/zero_shot/zero_shot_wikisql_qwen2.5-coder-0.5b-instruct.json
+benchmark_results/zero_shot/zero_shot_wikisql_index.json
+```
+
+Run a single model:
+
+```bash
+python -m peft_lab.benchmark_zero_shot \
+  --config configs/zero_shot_wikisql_benchmark.yaml \
+  --model-id t5-small
+```
+
 ## Web App
 
 Run the interactive baseline app from the ML image:
@@ -136,14 +189,17 @@ Then open http://localhost:8080.
 
 The app provides:
 
-- A leaderboard for the zero-shot baseline metrics.
+- A result selector for `zero-shot`, `QLoRA`, `BitFit`, `Prefix Tuning`, and `IA3` benchmark runs.
+- A leaderboard for the selected benchmark metrics.
 - Benchmark charts for execution accuracy, SQL validity, and latency.
+- Benchmark details: sample size, calls per model, total calls, dataset split, seed, and generation limits.
+- Runtime reproducibility details for the Docker or Cloud Run environment.
 - A WikiSQL playground where users choose a validation example, select a model, generate SQL, and compare it with the expected WikiSQL SQL.
 
 The first generation request for each model loads that model into memory, so it can take
 longer than later requests. The app reads real benchmark results from
-`outputs/baselines/zero_shot_wikisql.json` when present, otherwise it uses
-`sample_results/zero_shot_wikisql.demo.json`.
+`benchmark_results/<mode>/*_wikisql_index.json`. For the zero-shot dashboard it
+falls back to `sample_results/zero_shot_wikisql.demo.json` if no real run exists.
 
 ## Project Shape
 
@@ -151,6 +207,7 @@ longer than later requests. The app reads real benchmark results from
 configs/                 Experiment configurations
 web/                     Static frontend served by FastAPI
 src/peft_lab/            Training, data preparation, SQL rendering, metrics
+benchmark_results/       Benchmark JSON files consumed by the dashboard
 outputs/                 Local model/adapters/results output directory
 ```
 

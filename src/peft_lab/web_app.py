@@ -21,6 +21,7 @@ from peft_lab.evaluate_zero_shot import (
     load_model,
 )
 from peft_lab.execution import execution_match, is_valid_sql
+from peft_lab.runtime_info import collect_runtime_info
 from peft_lab.sql import normalize_sql, render_wikisql_query
 from peft_lab.wikisql import get_table
 
@@ -28,7 +29,47 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 WEB_DIR = ROOT_DIR / "web"
 BASELINE_CONFIG = ROOT_DIR / "configs" / "zero_shot_wikisql_baseline.yaml"
 REAL_RESULTS = ROOT_DIR / "outputs" / "baselines" / "zero_shot_wikisql.json"
+REAL_RESULTS_INDEX = (
+    ROOT_DIR / "benchmark_results" / "zero_shot" / "zero_shot_wikisql_index.json"
+)
 DEMO_RESULTS = ROOT_DIR / "sample_results" / "zero_shot_wikisql.demo.json"
+BENCHMARK_MODES = [
+    {
+        "id": "zero-shot",
+        "label": "Zero-shot baseline",
+        "description": "Modelos base sin fine-tuning",
+        "result_path": REAL_RESULTS_INDEX,
+        "fallback_path": DEMO_RESULTS,
+    },
+    {
+        "id": "qlora",
+        "label": "QLoRA",
+        "description": "Adaptadores LoRA con cuantizacion 4-bit",
+        "result_path": ROOT_DIR / "benchmark_results" / "qlora" / "qlora_wikisql_index.json",
+        "fallback_path": None,
+    },
+    {
+        "id": "bitfit",
+        "label": "BitFit",
+        "description": "Fine-tuning solo de bias",
+        "result_path": ROOT_DIR / "benchmark_results" / "bitfit" / "bitfit_wikisql_index.json",
+        "fallback_path": None,
+    },
+    {
+        "id": "prefix-tuning",
+        "label": "Prefix Tuning",
+        "description": "Prefijos virtuales entrenables",
+        "result_path": ROOT_DIR / "benchmark_results" / "prefix_tuning" / "prefix_tuning_wikisql_index.json",
+        "fallback_path": None,
+    },
+    {
+        "id": "ia3",
+        "label": "IA3",
+        "description": "Escalado aprendido de activaciones",
+        "result_path": ROOT_DIR / "benchmark_results" / "ia3" / "ia3_wikisql_index.json",
+        "fallback_path": None,
+    },
+]
 
 app = FastAPI(title="NL-to-SQL PEFT Lab", version="0.1.0")
 app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
@@ -50,12 +91,54 @@ def models() -> dict[str, Any]:
 
 
 @app.get("/api/benchmarks")
-def benchmarks() -> dict[str, Any]:
-    path = REAL_RESULTS if REAL_RESULTS.exists() else DEMO_RESULTS
+def benchmarks(mode: str = "zero-shot") -> dict[str, Any]:
+    mode_config = get_benchmark_mode(mode)
+    path = resolve_benchmark_path(mode_config)
+    if path is None:
+        return {
+            "mode": mode_config["id"],
+            "label": mode_config["label"],
+            "description": mode_config["description"],
+            "available": False,
+            "is_demo": False,
+            "source": None,
+            "runtime": collect_runtime_info(),
+            "benchmark": pending_benchmark_metadata(mode_config),
+            "dataset": None,
+            "models": [],
+            "message": "Resultados pendientes de generar",
+        }
+
     payload = json.loads(path.read_text(encoding="utf-8"))
+    payload.setdefault("runtime", collect_runtime_info())
+    payload["benchmark"] = {
+        **benchmark_metadata_from_payload(payload),
+        **payload.get("benchmark", {}),
+    }
+    payload["available"] = True
+    payload["label"] = mode_config["label"]
+    payload["description"] = mode_config["description"]
     payload["source"] = str(path.relative_to(ROOT_DIR))
     payload["is_demo"] = path == DEMO_RESULTS
     return payload
+
+
+@app.get("/api/benchmark-modes")
+def benchmark_modes() -> dict[str, Any]:
+    modes = []
+    for mode_config in BENCHMARK_MODES:
+        path = resolve_benchmark_path(mode_config)
+        modes.append(
+            {
+                "id": mode_config["id"],
+                "label": mode_config["label"],
+                "description": mode_config["description"],
+                "available": path is not None,
+                "is_demo": path == DEMO_RESULTS,
+                "source": str(path.relative_to(ROOT_DIR)) if path else None,
+            }
+        )
+    return {"modes": modes}
 
 
 @app.get("/api/examples")
@@ -178,3 +261,93 @@ def serialize_example(index: int, example: dict[str, Any]) -> dict[str, Any]:
         "row_count": len(rows),
         "sample_rows": rows[:4],
     }
+
+
+def get_benchmark_mode(mode: str) -> dict[str, Any]:
+    for mode_config in BENCHMARK_MODES:
+        if mode_config["id"] == mode:
+            return mode_config
+    raise HTTPException(status_code=404, detail="Unknown benchmark mode")
+
+
+def resolve_benchmark_path(mode_config: dict[str, Any]) -> Path | None:
+    candidates = [mode_config["result_path"]]
+    if mode_config["id"] == "zero-shot":
+        candidates.append(REAL_RESULTS)
+    if mode_config["fallback_path"] is not None:
+        candidates.append(mode_config["fallback_path"])
+    return next((candidate for candidate in candidates if candidate.exists()), None)
+
+
+def benchmark_metadata_from_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    dataset = payload.get("dataset") or {}
+    models = payload.get("models") or []
+    model_count = len(models)
+    sample_size = int(dataset.get("sample_size") or infer_sample_size(models))
+    generation = payload.get("generation") or {}
+    return {
+        "task": "NL-to-SQL",
+        "mode": payload.get("mode") or "zero-shot",
+        "runner": payload.get("runner") or "peft_lab.benchmark_zero_shot",
+        "planned_framework": "Hugging Face LightEval custom task",
+        "dataset": dataset.get("name") or "Salesforce/wikisql",
+        "split": dataset.get("split") or "validation",
+        "sample_size": sample_size,
+        "calls_per_model": sample_size,
+        "models_evaluated": model_count,
+        "total_model_calls": sample_size * model_count,
+        "sample_strategy": dataset.get("sample_strategy") or "unknown",
+        "seed": (payload.get("experiment") or {}).get("seed"),
+        "max_source_length": None,
+        "max_new_tokens": None,
+        "generation": generation,
+        "metrics": [
+            "exact_match",
+            "sql_validity",
+            "execution_accuracy",
+            "latency_seconds_per_example",
+        ],
+        "evaluation_notes": [
+            "Exact match compara SQL normalizado contra la referencia WikiSQL.",
+            "Valid SQL valida que la consulta generada pueda ejecutarse sobre la tabla del ejemplo.",
+            "Execution match compara el resultado de ejecutar el SQL generado contra el SQL de referencia.",
+        ],
+    }
+
+
+def pending_benchmark_metadata(mode_config: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "task": "NL-to-SQL",
+        "mode": mode_config["id"],
+        "runner": None,
+        "planned_framework": "Hugging Face LightEval custom task",
+        "dataset": "Salesforce/wikisql",
+        "split": "validation",
+        "sample_size": None,
+        "calls_per_model": None,
+        "models_evaluated": 0,
+        "total_model_calls": None,
+        "sample_strategy": None,
+        "seed": None,
+        "max_source_length": None,
+        "max_new_tokens": None,
+        "generation": {},
+        "metrics": [
+            "exact_match",
+            "sql_validity",
+            "execution_accuracy",
+            "latency_seconds_per_example",
+        ],
+        "evaluation_notes": [],
+    }
+
+
+def infer_sample_size(models: list[dict[str, Any]]) -> int:
+    for model in models:
+        sample_size = (model.get("metrics") or {}).get("sample_size")
+        if sample_size is not None:
+            return int(sample_size)
+        examples = model.get("examples") or []
+        if examples:
+            return len(examples)
+    return 0

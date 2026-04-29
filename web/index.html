@@ -20,6 +20,14 @@
       </header>
 
       <main>
+        <section class="mode-strip">
+          <label class="field mode-field">
+            <span>Resultados</span>
+            <select id="benchmark-mode-select"></select>
+          </label>
+          <p id="benchmark-mode-description">Cargando resultados...</p>
+        </section>
+
         <section class="metrics-band" id="leaderboard"></section>
 
         <section class="workspace">
@@ -101,6 +109,20 @@
         <section class="analysis-section">
           <div class="section-head">
             <h2>Análisis comparativo</h2>
+          </div>
+          <div class="panel benchmark-panel">
+            <div>
+              <h3>Detalles del benchmark</h3>
+              <p id="benchmark-summary">Cargando configuración del benchmark...</p>
+            </div>
+            <dl id="benchmark-grid"></dl>
+          </div>
+          <div class="panel runtime-panel">
+            <div>
+              <h3>Entorno de ejecución</h3>
+              <p id="runtime-summary">Cargando metadatos de reproducibilidad...</p>
+            </div>
+            <dl id="runtime-grid"></dl>
           </div>
           <div class="charts-grid">
             <div class="panel chart-panel">

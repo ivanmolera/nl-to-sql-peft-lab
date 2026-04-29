@@ -1,0 +1,38 @@
+experiment:
+  name: zero-shot-wikisql-benchmark
+  seed: 42
+
+dataset:
+  name: Salesforce/wikisql
+  split: validation
+  sample_size: 30
+  sample_strategy: random
+
+prompt:
+  max_source_length: 384
+  max_new_tokens: 96
+
+models:
+  - id: t5-small
+    name: google-t5/t5-small
+    architecture: seq2seq
+    role: T5 puro encoder-decoder
+  - id: smollm2-135m-instruct
+    name: HuggingFaceTB/SmolLM2-135M-Instruct
+    architecture: causal
+    role: LLM decoder-only generalista ultracompacto
+  - id: qwen2.5-coder-0.5b-instruct
+    name: Qwen/Qwen2.5-Coder-0.5B-Instruct
+    architecture: causal
+    role: LLM decoder-only especializado en codigo
+
+generation:
+  temperature: 0.0
+  do_sample: false
+
+reporting:
+  preview_limit: 20
+
+output:
+  dir: benchmark_results/zero_shot
+  index_path: benchmark_results/zero_shot/zero_shot_wikisql_index.json
