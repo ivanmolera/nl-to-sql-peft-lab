@@ -1,0 +1,81 @@
+{
+  "experiment": {
+    "name": "zero-shot-wikisql-baseline-demo",
+    "seed": 42
+  },
+  "dataset": {
+    "name": "Salesforce/wikisql",
+    "split": "validation",
+    "examples": 64
+  },
+  "mode": "zero-shot",
+  "note": "Demo values for UI development. Replace with outputs/baselines/zero_shot_wikisql.json after running the evaluator.",
+  "models": [
+    {
+      "id": "t5-small",
+      "name": "google-t5/t5-small",
+      "architecture": "seq2seq",
+      "role": "T5 puro encoder-decoder",
+      "metrics": {
+        "exact_match": 0.0,
+        "execution_accuracy": 0.0,
+        "sql_validity": 0.05,
+        "latency_seconds_per_example": 0.42
+      },
+      "examples": [
+        {
+          "question": "What is the population of Spain?",
+          "prediction": "SELECT population FROM table WHERE country = 'Spain'",
+          "reference": "SELECT \"Population\" FROM table WHERE \"Country\" = 'Spain'",
+          "exact_match": false,
+          "valid_sql": true,
+          "execution_match": true
+        }
+      ]
+    },
+    {
+      "id": "smollm2-135m-instruct",
+      "name": "HuggingFaceTB/SmolLM2-135M-Instruct",
+      "architecture": "causal",
+      "role": "LLM decoder-only generalista ultracompacto",
+      "metrics": {
+        "exact_match": 0.0,
+        "execution_accuracy": 0.0,
+        "sql_validity": 0.12,
+        "latency_seconds_per_example": 0.35
+      },
+      "examples": [
+        {
+          "question": "What is the population of Spain?",
+          "prediction": "SELECT Population FROM table WHERE Country = 'Spain'",
+          "reference": "SELECT \"Population\" FROM table WHERE \"Country\" = 'Spain'",
+          "exact_match": false,
+          "valid_sql": true,
+          "execution_match": true
+        }
+      ]
+    },
+    {
+      "id": "qwen2.5-coder-0.5b-instruct",
+      "name": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "architecture": "causal",
+      "role": "LLM decoder-only especializado en codigo",
+      "metrics": {
+        "exact_match": 0.0,
+        "execution_accuracy": 0.0,
+        "sql_validity": 0.2,
+        "latency_seconds_per_example": 0.58
+      },
+      "examples": [
+        {
+          "question": "What is the population of Spain?",
+          "prediction": "SELECT \"Population\" FROM table WHERE \"Country\" = 'Spain'",
+          "reference": "SELECT \"Population\" FROM table WHERE \"Country\" = 'Spain'",
+          "exact_match": true,
+          "valid_sql": true,
+          "execution_match": true
+        }
+      ]
+    }
+  ]
+}

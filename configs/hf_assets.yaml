@@ -1,0 +1,17 @@
+models:
+  - id: t5-small
+    name: google-t5/t5-small
+    kind: seq2seq
+  - id: smollm2-135m-instruct
+    name: HuggingFaceTB/SmolLM2-135M-Instruct
+    kind: causal
+  - id: qwen2.5-coder-0.5b-instruct
+    name: Qwen/Qwen2.5-Coder-0.5B-Instruct
+    kind: causal
+
+datasets:
+  - name: Salesforce/wikisql
+    splits:
+      - train
+      - validation
+      - test

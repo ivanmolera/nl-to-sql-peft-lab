@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NL-to-SQL PEFT Lab</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Baseline zero-shot</p>
+          <h1>NL-to-SQL PEFT Lab</h1>
+          <p class="subtitle">
+            Comparativa de técnicas PEFT para NL-to-SQL en modelos generativos pequeños
+          </p>
+        </div>
+        <div class="status-pill" id="result-source">Cargando resultados</div>
+      </header>
+
+      <main>
+        <section class="metrics-band" id="leaderboard"></section>
+
+        <section class="workspace">
+          <aside class="panel controls-panel">
+            <div class="panel-head">
+              <h2>Playground WikiSQL</h2>
+              <p>Elige un modelo base y una pregunta real del split de validación.</p>
+            </div>
+
+            <label class="field">
+              <span>Modelo</span>
+              <select id="model-select"></select>
+            </label>
+
+            <label class="field">
+              <span>Ejemplo WikiSQL</span>
+              <select id="example-select"></select>
+            </label>
+
+            <div class="question-box">
+              <span>Pregunta</span>
+              <p id="question-text">Cargando ejemplo...</p>
+            </div>
+
+            <div class="table-preview">
+              <div class="preview-head">
+                <span>Tabla</span>
+                <button type="button" class="icon-button" id="reload-examples" title="Cargar más ejemplos">
+                  ↻
+                </button>
+              </div>
+              <div class="table-scroll">
+                <table id="example-table"></table>
+              </div>
+            </div>
+
+            <button type="button" class="primary-action" id="run-button">
+              Generar SQL
+            </button>
+          </aside>
+
+          <section class="panel result-panel">
+            <div class="panel-head inline">
+              <div>
+                <h2>Resultado del modelo</h2>
+                <p id="run-meta">Sin ejecución todavía</p>
+              </div>
+              <div class="verdict" id="verdict">Pendiente</div>
+            </div>
+
+            <div class="comparison-grid">
+              <div class="sql-block">
+                <span>SQL generado</span>
+                <pre id="prediction-sql">-- Ejecuta un modelo para ver la predicción</pre>
+              </div>
+              <div class="sql-block">
+                <span>SQL esperado WikiSQL</span>
+                <pre id="reference-sql">-- Selecciona un ejemplo</pre>
+              </div>
+            </div>
+
+            <div class="checks">
+              <div class="check-card" id="check-exact">
+                <span>Exact match</span>
+                <strong>--</strong>
+              </div>
+              <div class="check-card" id="check-valid">
+                <span>SQL válido</span>
+                <strong>--</strong>
+              </div>
+              <div class="check-card" id="check-exec">
+                <span>Execution match</span>
+                <strong>--</strong>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section class="analysis-section">
+          <div class="section-head">
+            <h2>Análisis comparativo</h2>
+            <p>
+              Estos paneles usan resultados zero-shot o datos demo hasta que se ejecute el benchmark real.
+            </p>
+          </div>
+          <div class="charts-grid">
+            <div class="panel chart-panel">
+              <h3>Execution accuracy</h3>
+              <div id="chart-exec" class="bar-chart"></div>
+            </div>
+            <div class="panel chart-panel">
+              <h3>Validez SQL</h3>
+              <div id="chart-valid" class="bar-chart"></div>
+            </div>
+            <div class="panel chart-panel">
+              <h3>Latencia por ejemplo</h3>
+              <div id="chart-latency" class="bar-chart latency"></div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
