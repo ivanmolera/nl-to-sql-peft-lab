@@ -29,6 +29,8 @@ RUN python3 -m pip install --no-cache-dir --upgrade pip \
 RUN python3 scripts/download_hf_assets.py --config configs/hf_assets.yaml --only models
 RUN python3 scripts/download_hf_assets.py --config configs/hf_assets.yaml --only datasets
 
+COPY benchmark_results ./benchmark_results
+
 EXPOSE 8080
 
 CMD ["uvicorn", "peft_lab.web_app:app", "--host", "0.0.0.0", "--port", "8080"]
