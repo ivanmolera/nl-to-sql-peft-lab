@@ -143,7 +143,11 @@ def build_training_args(config: dict[str, Any]) -> Seq2SeqTrainingArguments:
 def build_compute_metrics(tokenizer: AutoTokenizer):
     def compute_metrics(eval_prediction) -> dict[str, float]:
         predictions, labels = eval_prediction
+        if isinstance(predictions, tuple):
+            predictions = predictions[0]
+        predictions = sanitize_token_ids(predictions, tokenizer)
         labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
+        labels = sanitize_token_ids(labels, tokenizer)
         decoded_predictions = tokenizer.batch_decode(
             predictions,
             skip_special_tokens=True,
@@ -157,6 +161,15 @@ def build_compute_metrics(tokenizer: AutoTokenizer):
         }
 
     return compute_metrics
+
+
+def sanitize_token_ids(token_ids: Any, tokenizer: AutoTokenizer) -> np.ndarray:
+    ids = np.asarray(token_ids)
+    pad_token_id = tokenizer.pad_token_id
+    if pad_token_id is None:
+        pad_token_id = tokenizer.eos_token_id or 0
+    vocab_size = len(tokenizer)
+    return np.where((ids >= 0) & (ids < vocab_size), ids, pad_token_id)
 
 
 def parse_args() -> argparse.Namespace:
