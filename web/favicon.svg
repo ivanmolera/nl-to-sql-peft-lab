@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="NL-to-SQL PEFT Lab">
+  <defs>
+    <linearGradient id="glass" x1="14" x2="50" y1="10" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#78d7ff"/>
+      <stop offset="1" stop-color="#5ee0a5"/>
+    </linearGradient>
+    <linearGradient id="liquid" x1="18" x2="46" y1="36" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#14b8a6"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#101827"/>
+  <path
+    d="M26 9h12v6l-3 1v13l14 21c2 3 0 7-4 7H19c-4 0-6-4-4-7l14-21V16l-3-1V9Z"
+    fill="url(#glass)"
+    opacity=".22"
+  />
+  <path
+    d="M26 9h12m-9 7v13L15 50c-2 3 0 7 4 7h26c4 0 6-4 4-7L35 29V16"
+    fill="none"
+    stroke="#e6fbff"
+    stroke-width="4"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path d="M19 45c5 2 9-2 14 0s8 2 12-1l5 8c1 2 0 5-3 5H17c-3 0-4-3-3-5l5-7Z" fill="url(#liquid)"/>
+  <circle cx="24" cy="43" r="2.5" fill="#d9fff8"/>
+  <circle cx="35" cy="49" r="2" fill="#d9fff8"/>
+  <path d="M23 30h18M23 36h18M32 30v-6m0 12v8" stroke="#b7f7ff" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="23" cy="30" r="2.5" fill="#f8fbff"/>
+  <circle cx="41" cy="30" r="2.5" fill="#f8fbff"/>
+  <circle cx="23" cy="36" r="2.5" fill="#f8fbff"/>
+  <circle cx="41" cy="36" r="2.5" fill="#f8fbff"/>
+</svg>
