@@ -20,6 +20,11 @@ def collect_runtime_info() -> dict[str, Any]:
         "processor": platform.processor(),
         "cpu_count": os.cpu_count(),
         "memory_total_gb": total_memory_gb(),
+        "training_service": os.environ.get("TRAINING_SERVICE"),
+        "region": os.environ.get("TRAINING_REGION") or os.environ.get("CLOUD_ML_REGION"),
+        "machine_type": os.environ.get("MACHINE_TYPE"),
+        "accelerator_type": os.environ.get("ACCELERATOR_TYPE"),
+        "accelerator_count": env_int("ACCELERATOR_COUNT"),
         "cloud_run": {
             "service": os.environ.get("K_SERVICE"),
             "revision": os.environ.get("K_REVISION"),
@@ -48,6 +53,7 @@ def torch_info() -> dict[str, Any]:
         "cuda_available": cuda_available,
         "cuda_version": torch.version.cuda,
         "device": device,
+        "cuda_device_count": torch.cuda.device_count() if cuda_available else 0,
     }
 
 
@@ -61,6 +67,16 @@ def total_memory_gb() -> float | None:
     except (AttributeError, OSError, ValueError):
         return None
     return round((pages * page_size) / (1024**3), 2)
+
+
+def env_int(name: str) -> int | None:
+    raw_value = os.environ.get(name)
+    if raw_value is None:
+        return None
+    try:
+        return int(raw_value)
+    except ValueError:
+        return None
 
 
 def cgroup_memory_limit_bytes() -> int | None:

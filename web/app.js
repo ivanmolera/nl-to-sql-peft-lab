@@ -193,11 +193,15 @@ function renderRuntime(runtime = {}) {
   const cloudRun = runtime.cloud_run || {};
   els.runtimeSummary.textContent = `${runtime.runtime || "runtime"} · ${runtime.device || "device"} · ${runtime.generated_at || "no timestamp"}`;
   const rows = [
+    ["Training service", runtime.training_service],
+    ["Region", runtime.region],
+    ["Machine type", runtime.machine_type],
     ["Image", runtime.container_image],
     ["Platform", runtime.platform],
     ["Python", runtime.python_version],
     ["PyTorch", runtime.torch_version],
     ["CUDA", runtime.cuda_available ? `Yes (${runtime.cuda_version || "n/a"})` : "No"],
+    ["GPU", formatGpu(runtime)],
     ["Device", runtime.device],
     ["CPU", runtime.cpu_count],
     ["RAM", runtime.memory_total_gb ? `${runtime.memory_total_gb} GB` : "n/a"],
@@ -206,6 +210,15 @@ function renderRuntime(runtime = {}) {
   els.runtimeGrid.innerHTML = rows
     .map(([label, value]) => `<div><dt>${label}</dt><dd>${value ?? "n/a"}</dd></div>`)
     .join("");
+}
+
+function formatGpu(runtime = {}) {
+  const count = runtime.accelerator_count
+    ?? runtime.cuda_device_count
+    ?? (runtime.cuda_available ? 1 : 0);
+  if (!count) return "0";
+  const type = runtime.accelerator_type || runtime.device || "GPU";
+  return `${count} x ${type}`;
 }
 
 function renderBenchmarkDetails(benchmark = {}, dataset = {}) {

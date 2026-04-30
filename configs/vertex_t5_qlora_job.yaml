@@ -7,5 +7,15 @@ workerPoolSpecs:
     containerSpec:
       imageUri: europe-west1-docker.pkg.dev/nl-sql-peft-lab-ivan-0429/nl-to-sql-peft-lab/train:latest
       env:
+        - name: TRAINING_SERVICE
+          value: Vertex AI Custom Job
+        - name: TRAINING_REGION
+          value: europe-west4
+        - name: MACHINE_TYPE
+          value: n1-standard-8
+        - name: ACCELERATOR_TYPE
+          value: NVIDIA_TESLA_T4
+        - name: ACCELERATOR_COUNT
+          value: "1"
         - name: GCS_OUTPUT_URI
           value: gs://nl-sql-peft-lab-ivan-0429-training/runs/t5-small-wikisql-qlora-v0.1.0
