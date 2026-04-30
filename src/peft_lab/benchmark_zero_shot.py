@@ -272,9 +272,9 @@ def build_benchmark_metadata(
         "generation": config.get("generation", {}),
         "metrics": metric_names,
         "evaluation_notes": [
-            "Exact match compara SQL normalizado contra la referencia WikiSQL.",
-            "Valid SQL valida que la consulta generada pueda ejecutarse sobre la tabla del ejemplo.",
-            "Execution match compara el resultado de ejecutar el SQL generado contra el SQL de referencia.",
+            "Exact match compares normalized SQL against the WikiSQL reference.",
+            "Valid SQL checks whether the generated query can run against the example table.",
+            "Execution match compares generated SQL results against reference SQL results.",
         ],
     }
 
