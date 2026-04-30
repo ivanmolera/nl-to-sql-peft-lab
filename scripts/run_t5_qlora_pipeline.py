@@ -9,8 +9,8 @@ from pathlib import Path
 from google.cloud import storage
 
 
-TRAIN_CONFIG = "configs/t5_small_wikisql_qlora.yaml"
-BENCHMARK_CONFIG = "configs/t5_small_wikisql_qlora_benchmark.yaml"
+DEFAULT_TRAIN_CONFIG = "configs/t5_small_wikisql_qlora.yaml"
+DEFAULT_BENCHMARK_CONFIG = "configs/t5_small_wikisql_qlora_benchmark.yaml"
 ARTIFACT_PATHS = [
     Path("outputs/t5-small-wikisql-qlora"),
     Path("benchmark_results/qlora"),
@@ -18,8 +18,11 @@ ARTIFACT_PATHS = [
 
 
 def main() -> None:
-    run(["python3", "-m", "peft_lab.train_t5_qlora", "--config", TRAIN_CONFIG])
-    run(["python3", "-m", "peft_lab.benchmark_t5_qlora", "--config", BENCHMARK_CONFIG])
+    train_config = os.environ.get("TRAIN_CONFIG", DEFAULT_TRAIN_CONFIG)
+    benchmark_config = os.environ.get("BENCHMARK_CONFIG", DEFAULT_BENCHMARK_CONFIG)
+
+    run(["python3", "-m", "peft_lab.train_t5_qlora", "--config", train_config])
+    run(["python3", "-m", "peft_lab.benchmark_t5_qlora", "--config", benchmark_config])
 
     gcs_output_uri = os.environ.get("GCS_OUTPUT_URI")
     if gcs_output_uri:
