@@ -155,6 +155,7 @@ build on Cloud Build or explicitly target `linux/amd64`.
 
 The runtime image uses:
 
+- CUDA 12.1 runtime with `torch==2.4.1+cu121`, pinned for Vertex AI T4 driver compatibility.
 - `HF_HOME=/opt/hf-cache`
 - `TRANSFORMERS_CACHE=/opt/hf-cache/hub`
 - `HF_DATASETS_CACHE=/opt/hf-cache/datasets`
