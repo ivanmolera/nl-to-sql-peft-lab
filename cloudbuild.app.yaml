@@ -1,0 +1,26 @@
+substitutions:
+  _APP_IMAGE: europe-west1-docker.pkg.dev/nl-sql-peft-lab-ivan-0429/nl-to-sql-peft-lab/app:latest
+  _RUNTIME_IMAGE: europe-west1-docker.pkg.dev/nl-sql-peft-lab-ivan-0429/nl-to-sql-peft-lab/runtime:latest
+
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --platform
+      - linux/amd64
+      - -f
+      - Dockerfile.app
+      - --build-arg
+      - RUNTIME_IMAGE=${_RUNTIME_IMAGE}
+      - -t
+      - ${_APP_IMAGE}
+      - .
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - ${_APP_IMAGE}
+
+images:
+  - ${_APP_IMAGE}
+
+timeout: 1200s

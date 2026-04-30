@@ -1,0 +1,27 @@
+FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV HF_HOME=/opt/hf-cache
+ENV TRANSFORMERS_CACHE=/opt/hf-cache/hub
+ENV HF_DATASETS_CACHE=/opt/hf-cache/datasets
+ENV APP_RUNTIME=docker
+ENV APP_RUNTIME_IMAGE=europe-west1-docker.pkg.dev/nl-sql-peft-lab-ivan-0429/nl-to-sql-peft-lab/runtime:latest
+
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3 python3-pip git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt ./
+
+RUN python3 -m pip install --no-cache-dir --upgrade pip \
+    && python3 -m pip install --no-cache-dir -r requirements.txt
+
+COPY configs/hf_assets.yaml ./configs/hf_assets.yaml
+COPY scripts/download_hf_assets.py ./scripts/download_hf_assets.py
+
+RUN python3 scripts/download_hf_assets.py --config configs/hf_assets.yaml --only models
+RUN python3 scripts/download_hf_assets.py --config configs/hf_assets.yaml --only datasets

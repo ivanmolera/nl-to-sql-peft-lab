@@ -53,37 +53,75 @@ python scripts/download_hf_assets.py --config configs/hf_assets.yaml --only mode
 python scripts/download_hf_assets.py --config configs/hf_assets.yaml --only datasets
 ```
 
-## Docker Image With Cached Models
+## Two-Speed Docker Images
 
-For Google Cloud, the recommended shape is:
+For Google Cloud, the project uses two build rhythms:
 
-- A lightweight web/API image for the app.
-- A separate ML/inference image with the Hugging Face assets predownloaded.
+- A heavy ML/runtime image with CUDA, Python dependencies, WikiSQL, and Hugging Face
+  models cached under `/opt/hf-cache`.
+- A lightweight app image for FastAPI, the static web UI, configs, sample results, and
+  benchmark JSON files.
 
-This repository includes `Dockerfile.ml`, which installs the Python stack and runs the
-asset downloader during image build. This avoids downloading model weights at Cloud Run
-startup time.
-
-```bash
-docker build -f Dockerfile.ml -t nl-to-sql-peft-lab-ml .
-```
-
-On Apple Silicon this builds an `arm64` image. For Google Cloud GPU/Cloud Run, build on
-Cloud Build or explicitly target `linux/amd64`:
+Rebuild the runtime image only when dependencies, selected models, dataset cache logic,
+or the CUDA/Python base image change:
 
 ```bash
-docker build --platform linux/amd64 -f Dockerfile.ml -t nl-to-sql-peft-lab-ml .
+gcloud builds submit \
+  --config=cloudbuild.runtime.yaml \
+  --project=nl-sql-peft-lab-ivan-0429
 ```
 
-The image uses:
+Rebuild the app image for normal iteration over `src/`, `web/`, `configs/`,
+`sample_results/`, and `benchmark_results/`:
+
+```bash
+gcloud builds submit \
+  --config=cloudbuild.app.yaml \
+  --project=nl-sql-peft-lab-ivan-0429
+```
+
+Deploy the app image to Cloud Run:
+
+```bash
+gcloud run deploy nl-to-sql-peft-lab \
+  --image=europe-west1-docker.pkg.dev/nl-sql-peft-lab-ivan-0429/nl-to-sql-peft-lab/app:latest \
+  --region=europe-west1 \
+  --project=nl-sql-peft-lab-ivan-0429 \
+  --platform=managed \
+  --allow-unauthenticated \
+  --memory=8Gi \
+  --cpu=4 \
+  --timeout=900 \
+  --concurrency=1 \
+  --max-instances=2 \
+  --port=8080
+```
+
+For local testing, build the runtime once and then rebuild only the app image:
+
+```bash
+docker build -f Dockerfile.runtime -t nl-to-sql-peft-lab-runtime .
+docker build -f Dockerfile.app \
+  --build-arg RUNTIME_IMAGE=nl-to-sql-peft-lab-runtime \
+  -t nl-to-sql-peft-lab-app .
+```
+
+On Apple Silicon this builds `arm64` images locally. For Google Cloud GPU/Cloud Run,
+build on Cloud Build or explicitly target `linux/amd64`.
+
+The runtime image uses:
 
 - `HF_HOME=/opt/hf-cache`
 - `TRANSFORMERS_CACHE=/opt/hf-cache/hub`
 - `HF_DATASETS_CACHE=/opt/hf-cache/datasets`
 
-For production on Google Cloud, build this image with Cloud Build and push it to Artifact
-Registry. The future web app can call this ML service or read precomputed results from a
-database/object storage.
+The legacy `Dockerfile.ml` and `cloudbuild.ml.yaml` still build a monolithic image with
+dependencies, assets, code, web files, and benchmark results in one layer stack. They are
+kept for compatibility, but the recommended deployment path is `Dockerfile.runtime` plus
+`Dockerfile.app`.
+
+This split avoids downloading model weights or regenerating the dataset cache every time
+the dashboard layout changes.
 
 ## Smoke Training Run
 
@@ -182,7 +220,7 @@ python -m peft_lab.benchmark_zero_shot \
 Run the interactive baseline app from the ML image:
 
 ```bash
-docker run --rm -p 8080:8080 nl-to-sql-peft-lab-ml
+docker run --rm -p 8080:8080 nl-to-sql-peft-lab-app
 ```
 
 Then open http://localhost:8080.
