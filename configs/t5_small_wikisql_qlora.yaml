@@ -9,8 +9,8 @@ dataset:
   name: Salesforce/wikisql
   train_split: train
   eval_split: validation
-  train_limit: 1024
-  eval_limit: 128
+  train_limit: 512
+  eval_limit: 64
 
 prompt:
   max_source_length: 384
@@ -31,9 +31,9 @@ training:
   gradient_accumulation_steps: 4
   learning_rate: 0.0002
   num_train_epochs: 1
-  logging_steps: 10
-  eval_steps: 100
-  save_steps: 100
-  save_total_limit: 2
+  logging_steps: 5
+  eval_steps: 25
+  save_steps: 25
+  save_total_limit: 1
   predict_with_generate: true
   generation_max_length: 128
