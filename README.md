@@ -233,6 +233,9 @@ Recommended sample sizes:
 The benchmark records per-example predictions and aggregated metrics:
 
 - Exact match
+- BLEU
+- ROUGE-L
+- Token F1
 - SQL validity
 - Execution accuracy
 - Failure, empty-output, and non-SQL rates

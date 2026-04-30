@@ -22,7 +22,12 @@ from transformers import (
 )
 
 from peft_lab.data import load_wikisql_split, prepare_seq2seq_dataset
-from peft_lab.metrics import exact_match_score
+from peft_lab.metrics import (
+    bleu_score,
+    exact_match_score,
+    rouge_l_score,
+    token_f1_score,
+)
 
 
 def main() -> None:
@@ -144,7 +149,12 @@ def build_compute_metrics(tokenizer: AutoTokenizer):
             skip_special_tokens=True,
         )
         decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
-        return {"exact_match": exact_match_score(decoded_predictions, decoded_labels)}
+        return {
+            "exact_match": exact_match_score(decoded_predictions, decoded_labels),
+            "bleu": bleu_score(decoded_predictions, decoded_labels),
+            "rouge_l": rouge_l_score(decoded_predictions, decoded_labels),
+            "token_f1": token_f1_score(decoded_predictions, decoded_labels),
+        }
 
     return compute_metrics
 

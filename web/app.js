@@ -6,6 +6,7 @@ const state = {
 };
 
 const els = {
+  version: document.querySelector("#app-version"),
   source: document.querySelector("#result-source"),
   modeTabs: document.querySelector("#benchmark-mode-tabs"),
   modeDescription: document.querySelector("#benchmark-mode-description"),
@@ -79,6 +80,11 @@ async function loadBenchmarkModes() {
     .join("");
 }
 
+async function loadVersion() {
+  const data = await api("/api/version");
+  els.version.textContent = `Version ${data.version}`;
+}
+
 async function loadBenchmarks() {
   const mode = state.selectedMode || "zero-shot";
   const data = await api(`/api/benchmarks?mode=${encodeURIComponent(mode)}`);
@@ -124,6 +130,9 @@ async function loadBenchmarks() {
             <div class="score">${pct(metrics.execution_accuracy)}</div>
           </header>
           <div class="metric-row"><span>Exact match</span><strong>${pct(metrics.exact_match)}</strong></div>
+          <div class="metric-row aux"><span>BLEU</span><strong>${pct(metrics.bleu)}</strong></div>
+          <div class="metric-row aux"><span>ROUGE-L</span><strong>${pct(metrics.rouge_l)}</strong></div>
+          <div class="metric-row aux"><span>Token F1</span><strong>${pct(metrics.token_f1)}</strong></div>
           <div class="metric-row"><span>Valid SQL</span><strong>${pct(metrics.sql_validity)}</strong></div>
           <div class="metric-row"><span>Latency</span><strong>${seconds(metrics.latency_seconds_per_example)}</strong></div>
         </article>
@@ -235,6 +244,7 @@ function renderBenchmarkDetails(benchmark = {}, dataset = {}) {
     ["Max tokens", formatNullable(benchmark.max_new_tokens)],
     ["Max input", formatNullable(benchmark.max_source_length)],
     ["Generation", generationMode],
+    ["Aux metrics", "BLEU · ROUGE-L · Token F1"],
   ];
   els.benchmarkGrid.innerHTML = rows
     .map(([label, value]) => `<div><dt>${label}</dt><dd>${value ?? "n/a"}</dd></div>`)
@@ -363,6 +373,7 @@ function bindEvents() {
 
 async function boot() {
   bindEvents();
+  await loadVersion();
   await loadBenchmarkModes();
   await Promise.all([loadBenchmarks(), loadModels(), loadExamples()]);
 }

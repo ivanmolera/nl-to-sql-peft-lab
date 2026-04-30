@@ -81,6 +81,9 @@
     },
     "metrics": [
       "exact_match",
+      "bleu",
+      "rouge_l",
+      "token_f1",
       "sql_validity",
       "execution_accuracy",
       "latency_seconds_per_example",
@@ -141,7 +144,10 @@
         "generation_latency_p95": 3.5037277225000523,
         "evaluation_latency_mean": 0.00032045829998802826,
         "throughput_examples_per_second": 0.642026296338139,
-        "output_characters_mean": 154.0
+        "output_characters_mean": 154.0,
+        "bleu": 0.038586921022431636,
+        "rouge_l": 0.05140736973338371,
+        "token_f1": 0.05496095356524946
       },
       "examples": [
         {
@@ -449,7 +455,10 @@
         "generation_latency_p95": 9.534724593800007,
         "evaluation_latency_mean": 0.000356073599997823,
         "throughput_examples_per_second": 0.19401488322621102,
-        "output_characters_mean": 98.0
+        "output_characters_mean": 98.0,
+        "bleu": 0.09022807466509303,
+        "rouge_l": 0.22118549372205187,
+        "token_f1": 0.22118549372205187
       },
       "examples": [
         {
@@ -757,7 +766,10 @@
         "generation_latency_p95": 14.521023403049954,
         "evaluation_latency_mean": 0.00034233480000693816,
         "throughput_examples_per_second": 0.08580276637691128,
-        "output_characters_mean": 62.13333333333333
+        "output_characters_mean": 62.13333333333333,
+        "bleu": 0.0902728930245187,
+        "rouge_l": 0.2563781564716338,
+        "token_f1": 0.2563781564716338
       },
       "examples": [
         {

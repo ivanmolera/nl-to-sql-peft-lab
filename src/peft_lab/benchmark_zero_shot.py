@@ -20,7 +20,12 @@ from peft_lab.evaluate_zero_shot import (
     set_seed,
 )
 from peft_lab.execution import execution_match, is_valid_sql
-from peft_lab.metrics import exact_match_score
+from peft_lab.metrics import (
+    bleu_score,
+    exact_match_score,
+    rouge_l_score,
+    token_f1_score,
+)
 from peft_lab.runtime_info import collect_runtime_info
 from peft_lab.sql import normalize_sql, render_wikisql_query
 
@@ -205,6 +210,9 @@ def aggregate_metrics(
     return {
         "sample_size": float(total),
         "exact_match": exact_match_score(predictions, references),
+        "bleu": bleu_score(predictions, references),
+        "rouge_l": rouge_l_score(predictions, references),
+        "token_f1": token_f1_score(predictions, references),
         "execution_accuracy": ratio(execution_matches, total),
         "sql_validity": ratio(valid_sql, total),
         "failure_rate": ratio(failures, total),
@@ -247,6 +255,9 @@ def build_benchmark_metadata(
 ) -> dict[str, Any]:
     metric_names = [
         "exact_match",
+        "bleu",
+        "rouge_l",
+        "token_f1",
         "sql_validity",
         "execution_accuracy",
         "latency_seconds_per_example",

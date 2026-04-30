@@ -93,6 +93,13 @@ h3 {
   font-size: 1rem;
 }
 
+.topbar-meta {
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+}
+
+.version-pill,
 .status-pill {
   flex: 0 0 auto;
   max-width: min(540px, 42vw);
@@ -104,6 +111,11 @@ h3 {
   font-size: 0.85rem;
   font-weight: 700;
   overflow-wrap: anywhere;
+}
+
+.version-pill {
+  color: var(--accent-strong);
+  background: #e4f3f4;
 }
 
 main {
@@ -230,6 +242,14 @@ main {
 
 .metric-row strong {
   color: var(--text);
+}
+
+.metric-row.aux {
+  color: #6d7a55;
+}
+
+.metric-row.aux strong {
+  color: #4f6230;
 }
 
 .workspace {

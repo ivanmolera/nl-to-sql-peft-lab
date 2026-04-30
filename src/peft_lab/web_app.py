@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+from importlib.metadata import PackageNotFoundError, version
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -76,6 +77,14 @@ class GenerateRequest(BaseModel):
 @app.get("/")
 def index() -> FileResponse:
     return FileResponse(WEB_DIR / "index.html")
+
+
+@app.get("/api/version")
+def app_version() -> dict[str, Any]:
+    return {
+        "version": current_version(),
+        "runtime": collect_runtime_info(),
+    }
 
 
 @app.get("/api/models")
@@ -204,6 +213,9 @@ def benchmark_metadata_from_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "generation": generation,
         "metrics": [
             "exact_match",
+            "bleu",
+            "rouge_l",
+            "token_f1",
             "sql_validity",
             "execution_accuracy",
             "latency_seconds_per_example",
@@ -235,6 +247,9 @@ def pending_benchmark_metadata(mode_config: dict[str, Any]) -> dict[str, Any]:
         "generation": {},
         "metrics": [
             "exact_match",
+            "bleu",
+            "rouge_l",
+            "token_f1",
             "sql_validity",
             "execution_accuracy",
             "latency_seconds_per_example",
@@ -307,3 +322,13 @@ def error_detail(response: httpx.Response) -> Any:
     except ValueError:
         return response.text
     return payload.get("detail", payload)
+
+
+def current_version() -> str:
+    configured = os.environ.get("APP_VERSION")
+    if configured:
+        return configured
+    try:
+        return f"v{version('nl-to-sql-peft-lab')}"
+    except PackageNotFoundError:
+        return "development"

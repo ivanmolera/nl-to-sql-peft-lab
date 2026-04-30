@@ -17,7 +17,12 @@ from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM, AutoTokeni
 
 from peft_lab.data import build_prompt, load_wikisql_split
 from peft_lab.execution import execution_match, is_valid_sql
-from peft_lab.metrics import exact_match_score
+from peft_lab.metrics import (
+    bleu_score,
+    exact_match_score,
+    rouge_l_score,
+    token_f1_score,
+)
 from peft_lab.sql import normalize_sql, render_wikisql_query
 
 
@@ -114,6 +119,9 @@ def evaluate_model(
         "role": model_spec.role,
         "metrics": {
             "exact_match": exact_match_score(predictions, references),
+            "bleu": bleu_score(predictions, references),
+            "rouge_l": rouge_l_score(predictions, references),
+            "token_f1": token_f1_score(predictions, references),
             "execution_accuracy": execution_count / total if total else 0.0,
             "sql_validity": valid_count / total if total else 0.0,
             "latency_seconds_per_example": elapsed / total if total else 0.0,

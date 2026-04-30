@@ -40,7 +40,10 @@
     "generation_latency_p95": 3.5037277225000523,
     "evaluation_latency_mean": 0.00032045829998802826,
     "throughput_examples_per_second": 0.642026296338139,
-    "output_characters_mean": 154.0
+    "output_characters_mean": 154.0,
+    "bleu": 0.038586921022431636,
+    "rouge_l": 0.05140736973338371,
+    "token_f1": 0.05496095356524946
   },
   "examples": [
     {
