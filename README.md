@@ -53,14 +53,16 @@ python scripts/download_hf_assets.py --config configs/hf_assets.yaml --only mode
 python scripts/download_hf_assets.py --config configs/hf_assets.yaml --only datasets
 ```
 
-## Two-Speed Docker Images
+## Separated Service Images
 
-For Google Cloud, the project uses two build rhythms:
+For Google Cloud, the project uses three deployable images:
 
-- A heavy ML/runtime image with CUDA, Python dependencies, WikiSQL, and Hugging Face
-  models cached under `/opt/hf-cache`.
-- A lightweight app image for FastAPI, the static web UI, configs, sample results, and
-  benchmark JSON files.
+- A heavy ML/runtime base image with CUDA, Python ML dependencies, WikiSQL, and Hugging
+  Face models cached under `/opt/hf-cache`.
+- A ML API image that inherits from the runtime image and serves live playground
+  inference through `peft_lab.ml_api`.
+- A lightweight web app image based on `python:slim` that serves the dashboard, static
+  UI, benchmark JSON files, and proxies playground calls to the ML API.
 
 Rebuild the runtime image only when dependencies, selected models, dataset cache logic,
 or the CUDA/Python base image change:
@@ -71,8 +73,17 @@ gcloud builds submit \
   --project=nl-sql-peft-lab-ivan-0429
 ```
 
-Rebuild the app image for normal iteration over `src/`, `web/`, `configs/`,
-`sample_results/`, and `benchmark_results/`:
+Rebuild the ML API image when live inference code, model loading, prompt generation,
+or adapter-loading logic changes:
+
+```bash
+gcloud builds submit \
+  --config=cloudbuild.ml-api.yaml \
+  --project=nl-sql-peft-lab-ivan-0429
+```
+
+Rebuild the web app image for normal dashboard iteration over `web/`, benchmark JSON,
+result formatting, copy, layout, and the lightweight API proxy:
 
 ```bash
 gcloud builds submit \
@@ -80,11 +91,11 @@ gcloud builds submit \
   --project=nl-sql-peft-lab-ivan-0429
 ```
 
-Deploy the app image to Cloud Run:
+Deploy the ML API image to Cloud Run:
 
 ```bash
-gcloud run deploy nl-to-sql-peft-lab \
-  --image=europe-west1-docker.pkg.dev/nl-sql-peft-lab-ivan-0429/nl-to-sql-peft-lab/app:latest \
+gcloud run deploy nl-to-sql-peft-lab-ml \
+  --image=europe-west1-docker.pkg.dev/nl-sql-peft-lab-ivan-0429/nl-to-sql-peft-lab/ml-api:latest \
   --region=europe-west1 \
   --project=nl-sql-peft-lab-ivan-0429 \
   --platform=managed \
@@ -97,13 +108,46 @@ gcloud run deploy nl-to-sql-peft-lab \
   --port=8080
 ```
 
-For local testing, build the runtime once and then rebuild only the app image:
+Deploy the web app image to Cloud Run and point it at the ML API URL:
+
+```bash
+gcloud run deploy nl-to-sql-peft-lab \
+  --image=europe-west1-docker.pkg.dev/nl-sql-peft-lab-ivan-0429/nl-to-sql-peft-lab/app:latest \
+  --region=europe-west1 \
+  --project=nl-sql-peft-lab-ivan-0429 \
+  --platform=managed \
+  --allow-unauthenticated \
+  --memory=512Mi \
+  --cpu=1 \
+  --timeout=300 \
+  --concurrency=20 \
+  --max-instances=5 \
+  --port=8080 \
+  --set-env-vars=ML_API_BASE_URL=https://<ml-api-service-url>,ML_API_TIMEOUT_SECONDS=900
+```
+
+The web app service does not load Hugging Face models. Its `/api/examples` and
+`/api/generate` routes proxy to the ML API service so the browser can keep using same
+origin API paths.
+
+For local testing, build the runtime once, then build the ML API and web app images:
 
 ```bash
 docker build -f Dockerfile.runtime -t nl-to-sql-peft-lab-runtime .
-docker build -f Dockerfile.app \
+docker build -f Dockerfile.ml-api \
   --build-arg RUNTIME_IMAGE=nl-to-sql-peft-lab-runtime \
+  -t nl-to-sql-peft-lab-ml-api .
+docker build -f Dockerfile.app \
   -t nl-to-sql-peft-lab-app .
+```
+
+Run both services locally:
+
+```bash
+docker run --rm -p 8081:8080 nl-to-sql-peft-lab-ml-api
+docker run --rm -p 8080:8080 \
+  -e ML_API_BASE_URL=http://host.docker.internal:8081 \
+  nl-to-sql-peft-lab-app
 ```
 
 On Apple Silicon this builds `arm64` images locally. For Google Cloud GPU/Cloud Run,
@@ -117,11 +161,12 @@ The runtime image uses:
 
 The legacy `Dockerfile.ml` and `cloudbuild.ml.yaml` still build a monolithic image with
 dependencies, assets, code, web files, and benchmark results in one layer stack. They are
-kept for compatibility, but the recommended deployment path is `Dockerfile.runtime` plus
-`Dockerfile.app`.
+kept for compatibility, but the recommended deployment path is now
+`Dockerfile.runtime`, `Dockerfile.ml-api`, and `Dockerfile.app`.
 
 This split avoids downloading model weights or regenerating the dataset cache every time
-the dashboard layout changes.
+the dashboard layout changes, and it also keeps normal UI deployments independent from
+the large ML runtime image.
 
 ## Smoke Training Run
 
@@ -234,8 +279,8 @@ The app provides:
 - Runtime reproducibility details for the Docker or Cloud Run environment.
 - A WikiSQL playground where users choose a validation example, select a model, generate SQL, and compare it with the expected WikiSQL SQL.
 
-The first generation request for each model loads that model into memory, so it can take
-longer than later requests. The app reads real benchmark results from
+The first generation request for each model loads that model into memory in the ML API
+service, so it can take longer than later requests. The web app reads real benchmark results from
 `benchmark_results/<mode>/*_wikisql_index.json`. For the zero-shot dashboard it
 falls back to `sample_results/zero_shot_wikisql.demo.json` if no real run exists.
 
