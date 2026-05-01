@@ -66,6 +66,7 @@ def main() -> None:
         model = get_peft_model(model, build_peft_config(config))
     if config["training"].get("gradient_checkpointing", False):
         model.gradient_checkpointing_enable()
+        enable_input_require_grads(model)
     if torch.cuda.is_available() and method != "qlora":
         model.to("cuda")
     print_trainable_parameters(model)
@@ -248,6 +249,19 @@ class CausalCompletionCollator:
 def enable_bitfit_parameters(model) -> None:
     for name, parameter in model.named_parameters():
         parameter.requires_grad = "bias" in name.lower()
+
+
+def enable_input_require_grads(model) -> None:
+    if hasattr(model, "enable_input_require_grads"):
+        model.enable_input_require_grads()
+        return
+
+    input_embeddings = model.get_input_embeddings()
+
+    def make_inputs_require_grad(_module, _inputs, output):
+        output.requires_grad_(True)
+
+    input_embeddings.register_forward_hook(make_inputs_require_grad)
 
 
 def print_trainable_parameters(model) -> None:
