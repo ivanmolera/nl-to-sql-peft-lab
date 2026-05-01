@@ -10,10 +10,11 @@ evaluation artifacts, and a web dashboard where users can compare results and te
 trained variants on real WikiSQL examples.
 
 The model suite includes `google-t5/t5-small`, `HuggingFaceTB/SmolLM2-135M-Instruct`,
-and `Qwen/Qwen2.5-Coder-0.5B-Instruct`. `google-t5/t5-small` is the first model with
-completed PEFT runs, while the lab is designed to extend the same evaluation flow to
-the full selected model set. The benchmark dataset is `Salesforce/wikisql`, and the
-PEFT comparison covers QLoRA, BitFit, Prefix Tuning, and IA3.
+and `Qwen/Qwen2.5-Coder-0.5B-Instruct`. The lab is designed to apply the same
+evaluation flow to the full selected model set. The benchmark dataset is
+`Salesforce/wikisql`, with a project-specific WikiSQL NL-to-SQL benchmark runner
+designed to be compatible with a Hugging Face LightEval custom task. The PEFT
+comparison covers QLoRA, BitFit, Prefix Tuning, and IA3.
 
 The web app is designed as both an analysis dashboard and an interactive playground:
 it displays benchmark metrics such as exact match, SQL validity, execution accuracy,
