@@ -1,0 +1,9 @@
+{
+  "base_model_name_or_path": "google-t5/t5-small",
+  "peft_type": "BITFIT",
+  "target": "parameters whose name contains 'bias'",
+  "trainable_parameters": [
+    "decoder.block.0.layer.0.SelfAttention.relative_attention_bias.weight",
+    "encoder.block.0.layer.0.SelfAttention.relative_attention_bias.weight"
+  ]
+}

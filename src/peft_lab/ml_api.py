@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+import torch
 from fastapi import FastAPI, HTTPException
 from peft import PeftModel
 from pydantic import BaseModel
@@ -24,6 +25,7 @@ from peft_lab.wikisql import get_table
 ROOT_DIR = Path(__file__).resolve().parents[2]
 BASELINE_CONFIG = ROOT_DIR / "configs" / "zero_shot_wikisql_baseline.yaml"
 QLORA_T5_ADAPTER = ROOT_DIR / "model_artifacts" / "qlora" / "t5-small-wikisql-qlora" / "adapter"
+BITFIT_T5_ADAPTER = ROOT_DIR / "model_artifacts" / "bitfit" / "t5-small-wikisql-bitfit" / "adapter"
 
 app = FastAPI(title="NL-to-SQL PEFT Lab ML API", version="0.1.1")
 
@@ -37,6 +39,7 @@ class LiveModelSpec:
     base_model_name: str | None = None
     adapter_path: str | None = None
     peft_method: str | None = None
+    adapter_type: str | None = None
 
     def generation_spec(self) -> ModelSpec:
         return ModelSpec(
@@ -165,11 +168,23 @@ def get_model_specs() -> dict[str, LiveModelSpec]:
             base_model_name="google-t5/t5-small",
             adapter_path=str(QLORA_T5_ADAPTER),
             peft_method="qlora",
+            adapter_type="peft",
+        )
+    if BITFIT_T5_ADAPTER.exists():
+        specs["t5-small-bitfit"] = LiveModelSpec(
+            id="t5-small-bitfit",
+            name="google-t5/t5-small + BitFit",
+            architecture="seq2seq",
+            role="T5-small fine-tuned on WikiSQL with BitFit",
+            base_model_name="google-t5/t5-small",
+            adapter_path=str(BITFIT_T5_ADAPTER),
+            peft_method="bitfit",
+            adapter_type="bitfit",
         )
     return specs
 
 
-@lru_cache(maxsize=4)
+@lru_cache(maxsize=5)
 def get_loaded_model(model_id: str):
     model_spec = get_model_specs()[model_id]
     tokenizer_source = model_spec.adapter_path or model_spec.base_model_name or model_spec.name
@@ -189,8 +204,21 @@ def load_live_model(model_spec: LiveModelSpec):
         if model_spec.architecture != "seq2seq":
             raise ValueError(f"Unsupported adapter architecture: {model_spec.architecture}")
         base_model = load_model(model_spec.generation_spec(), get_config())
+        if model_spec.adapter_type == "bitfit":
+            return load_bitfit_adapter(base_model, Path(model_spec.adapter_path))
         return PeftModel.from_pretrained(base_model, model_spec.adapter_path)
     return load_model(model_spec.generation_spec(), get_config())
+
+
+def load_bitfit_adapter(model, adapter_path: Path):
+    device = next(model.parameters()).device
+    bias_state = torch.load(adapter_path / "bitfit_biases.pt", map_location=device)
+    parameters = dict(model.named_parameters())
+    for name, value in bias_state.items():
+        if name not in parameters:
+            raise ValueError(f"BitFit parameter '{name}' was not found in the base model")
+        parameters[name].data.copy_(value.to(parameters[name].device))
+    return model
 
 
 def serialize_model(model_spec: LiveModelSpec) -> dict[str, Any]:
