@@ -1,0 +1,191 @@
+"""Train T5-small on WikiSQL with BitFit."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import random
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import torch
+import yaml
+from transformers import (
+    AutoModelForSeq2SeqLM,
+    AutoTokenizer,
+    DataCollatorForSeq2Seq,
+    Seq2SeqTrainer,
+    Seq2SeqTrainingArguments,
+)
+
+from peft_lab.data import load_wikisql_split, prepare_seq2seq_dataset
+from peft_lab.metrics import bleu_score, exact_match_score, rouge_l_score, token_f1_score
+
+
+def main() -> None:
+    args = parse_args()
+    config = load_config(args.config)
+    set_seed(config["experiment"]["seed"])
+
+    output_dir = Path(config["training"]["output_dir"])
+    adapter_dir = output_dir / "adapter"
+    adapter_dir.mkdir(parents=True, exist_ok=True)
+
+    tokenizer = AutoTokenizer.from_pretrained(config["model"]["name"])
+    model = AutoModelForSeq2SeqLM.from_pretrained(config["model"]["name"])
+    enable_bitfit_parameters(model)
+    if torch.cuda.is_available():
+        model.to("cuda")
+    print_trainable_parameters(model)
+
+    train_raw = load_wikisql_split(
+        config["dataset"]["name"],
+        config["dataset"]["train_split"],
+        config["dataset"].get("train_limit"),
+    )
+    eval_raw = load_wikisql_split(
+        config["dataset"]["name"],
+        config["dataset"]["eval_split"],
+        config["dataset"].get("eval_limit"),
+    )
+    train_dataset = prepare_seq2seq_dataset(
+        train_raw,
+        tokenizer,
+        config["prompt"]["max_source_length"],
+        config["prompt"]["max_target_length"],
+    )
+    eval_dataset = prepare_seq2seq_dataset(
+        eval_raw,
+        tokenizer,
+        config["prompt"]["max_source_length"],
+        config["prompt"]["max_target_length"],
+    )
+
+    trainer = Seq2SeqTrainer(
+        model=model,
+        args=build_training_args(config),
+        train_dataset=train_dataset,
+        eval_dataset=eval_dataset,
+        data_collator=DataCollatorForSeq2Seq(
+            tokenizer=tokenizer,
+            model=model,
+            label_pad_token_id=-100,
+        ),
+        tokenizer=tokenizer,
+        compute_metrics=build_compute_metrics(tokenizer),
+    )
+
+    trainer.train()
+    metrics = trainer.evaluate()
+    save_bitfit_adapter(model, tokenizer, adapter_dir, config)
+    save_json(output_dir / "eval_metrics.json", metrics)
+
+
+def enable_bitfit_parameters(model) -> None:
+    for name, parameter in model.named_parameters():
+        parameter.requires_grad = "bias" in name.lower()
+
+
+def print_trainable_parameters(model) -> None:
+    trainable = sum(parameter.numel() for parameter in model.parameters() if parameter.requires_grad)
+    total = sum(parameter.numel() for parameter in model.parameters())
+    ratio = 100 * trainable / total if total else 0
+    print(f"trainable params: {trainable:,} || all params: {total:,} || trainable%: {ratio:.4f}")
+
+
+def save_bitfit_adapter(model, tokenizer, adapter_dir: Path, config: dict[str, Any]) -> None:
+    bias_state = {
+        name: parameter.detach().cpu()
+        for name, parameter in model.named_parameters()
+        if parameter.requires_grad
+    }
+    torch.save(bias_state, adapter_dir / "bitfit_biases.pt")
+    tokenizer.save_pretrained(adapter_dir)
+    save_json(
+        adapter_dir / "bitfit_config.json",
+        {
+            "base_model_name_or_path": config["model"]["name"],
+            "peft_type": "BITFIT",
+            "target": "parameters whose name contains 'bias'",
+            "trainable_parameters": sorted(bias_state.keys()),
+        },
+    )
+
+
+def build_training_args(config: dict[str, Any]) -> Seq2SeqTrainingArguments:
+    training = config["training"]
+    return Seq2SeqTrainingArguments(
+        output_dir=training["output_dir"],
+        per_device_train_batch_size=training["per_device_train_batch_size"],
+        per_device_eval_batch_size=training["per_device_eval_batch_size"],
+        gradient_accumulation_steps=training["gradient_accumulation_steps"],
+        learning_rate=training["learning_rate"],
+        num_train_epochs=training["num_train_epochs"],
+        logging_steps=training["logging_steps"],
+        eval_steps=training["eval_steps"],
+        eval_strategy="steps",
+        save_strategy="no",
+        predict_with_generate=training["predict_with_generate"],
+        generation_max_length=training["generation_max_length"],
+        report_to="none",
+        fp16=torch.cuda.is_available() and not torch.cuda.is_bf16_supported(),
+        bf16=torch.cuda.is_available() and torch.cuda.is_bf16_supported(),
+    )
+
+
+def build_compute_metrics(tokenizer: AutoTokenizer):
+    def compute_metrics(eval_prediction) -> dict[str, float]:
+        predictions, labels = eval_prediction
+        if isinstance(predictions, tuple):
+            predictions = predictions[0]
+        predictions = sanitize_token_ids(predictions, tokenizer)
+        labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
+        labels = sanitize_token_ids(labels, tokenizer)
+        decoded_predictions = tokenizer.batch_decode(predictions, skip_special_tokens=True)
+        decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
+        return {
+            "exact_match": exact_match_score(decoded_predictions, decoded_labels),
+            "bleu": bleu_score(decoded_predictions, decoded_labels),
+            "rouge_l": rouge_l_score(decoded_predictions, decoded_labels),
+            "token_f1": token_f1_score(decoded_predictions, decoded_labels),
+        }
+
+    return compute_metrics
+
+
+def sanitize_token_ids(token_ids: Any, tokenizer: AutoTokenizer) -> np.ndarray:
+    ids = np.asarray(token_ids)
+    pad_token_id = tokenizer.pad_token_id
+    if pad_token_id is None:
+        pad_token_id = tokenizer.eos_token_id or 0
+    vocab_size = len(tokenizer)
+    return np.where((ids >= 0) & (ids < vocab_size), ids, pad_token_id)
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", required=True, help="Path to the experiment YAML.")
+    return parser.parse_args()
+
+
+def load_config(path: str) -> dict[str, Any]:
+    with open(path, "r", encoding="utf-8") as config_file:
+        return yaml.safe_load(config_file)
+
+
+def save_json(path: Path, payload: dict[str, Any]) -> None:
+    with path.open("w", encoding="utf-8") as output_file:
+        json.dump(payload, output_file, indent=2, sort_keys=True)
+
+
+def set_seed(seed: int) -> None:
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+
+if __name__ == "__main__":
+    main()

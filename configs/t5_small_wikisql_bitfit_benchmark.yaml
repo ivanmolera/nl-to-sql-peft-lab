@@ -1,0 +1,31 @@
+experiment:
+  name: t5-small-wikisql-bitfit-benchmark
+  seed: 42
+
+model:
+  id: t5-small-bitfit
+  name: google-t5/t5-small
+  architecture: seq2seq
+  role: T5-small fine-tuned with BitFit
+  adapter_path: outputs/t5-small-wikisql-bitfit/adapter
+
+dataset:
+  name: Salesforce/wikisql
+  split: validation
+  sample_size: 30
+  sample_strategy: random
+
+prompt:
+  max_source_length: 384
+  max_new_tokens: 96
+
+generation:
+  do_sample: false
+  temperature: 0.0
+
+reporting:
+  preview_limit: 20
+
+output:
+  dir: benchmark_results/bitfit
+  index_path: benchmark_results/bitfit/bitfit_wikisql_index.json
