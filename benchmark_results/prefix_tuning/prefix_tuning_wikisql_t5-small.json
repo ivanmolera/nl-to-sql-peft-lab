@@ -704,5 +704,29 @@
       "output_characters": 49,
       "error": null
     }
-  ]
+  ],
+  "training": {
+    "technique": "Prefix Tuning",
+    "base_model": "google-t5/t5-small",
+    "dataset": "Salesforce/wikisql",
+    "train_split": "train",
+    "eval_split": "validation",
+    "train_examples": 56355,
+    "eval_examples": 256,
+    "epochs": 1,
+    "train_limit": null,
+    "adapter": "Prefix Tuning with 20 virtual tokens and projection enabled",
+    "quantization": "None",
+    "trainer_eval_metrics": {
+      "epoch": 1.0,
+      "eval_bleu": 0.13519992540868586,
+      "eval_exact_match": 0.0,
+      "eval_loss": 0.5776718854904175,
+      "eval_rouge_l": 0.2170706334110302,
+      "eval_runtime": 27.402,
+      "eval_samples_per_second": 9.342,
+      "eval_steps_per_second": 1.168,
+      "eval_token_f1": 0.2243601163859633
+    }
+  }
 }

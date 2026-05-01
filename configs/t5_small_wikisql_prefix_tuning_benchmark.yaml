@@ -23,6 +23,20 @@ generation:
   do_sample: false
   temperature: 0.0
 
+fine_tuning:
+  technique: Prefix Tuning
+  base_model: google-t5/t5-small
+  dataset: Salesforce/wikisql
+  train_split: train
+  eval_split: validation
+  train_examples: 56355
+  eval_examples: 256
+  epochs: 1
+  train_limit: null
+  adapter: Prefix Tuning with 20 virtual tokens and projection enabled
+  quantization: None
+  eval_metrics_path: outputs/t5-small-wikisql-prefix-tuning/eval_metrics.json
+
 reporting:
   preview_limit: 20
 
