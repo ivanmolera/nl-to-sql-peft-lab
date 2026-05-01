@@ -26,6 +26,13 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 BASELINE_CONFIG = ROOT_DIR / "configs" / "zero_shot_wikisql_baseline.yaml"
 QLORA_T5_ADAPTER = ROOT_DIR / "model_artifacts" / "qlora" / "t5-small-wikisql-qlora" / "adapter"
 BITFIT_T5_ADAPTER = ROOT_DIR / "model_artifacts" / "bitfit" / "t5-small-wikisql-bitfit" / "adapter"
+PREFIX_T5_ADAPTER = (
+    ROOT_DIR
+    / "model_artifacts"
+    / "prefix_tuning"
+    / "t5-small-wikisql-prefix-tuning"
+    / "adapter"
+)
 
 app = FastAPI(title="NL-to-SQL PEFT Lab ML API", version="0.1.1")
 
@@ -181,10 +188,21 @@ def get_model_specs() -> dict[str, LiveModelSpec]:
             peft_method="bitfit",
             adapter_type="bitfit",
         )
+    if PREFIX_T5_ADAPTER.exists():
+        specs["t5-small-prefix-tuning"] = LiveModelSpec(
+            id="t5-small-prefix-tuning",
+            name="google-t5/t5-small + Prefix Tuning",
+            architecture="seq2seq",
+            role="T5-small fine-tuned on WikiSQL with Prefix Tuning",
+            base_model_name="google-t5/t5-small",
+            adapter_path=str(PREFIX_T5_ADAPTER),
+            peft_method="prefix-tuning",
+            adapter_type="peft",
+        )
     return specs
 
 
-@lru_cache(maxsize=5)
+@lru_cache(maxsize=7)
 def get_loaded_model(model_id: str):
     model_spec = get_model_specs()[model_id]
     tokenizer_source = model_spec.adapter_path or model_spec.base_model_name or model_spec.name

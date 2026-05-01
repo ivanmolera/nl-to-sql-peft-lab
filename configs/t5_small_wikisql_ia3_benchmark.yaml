@@ -1,0 +1,45 @@
+experiment:
+  name: t5-small-wikisql-ia3-benchmark
+  seed: 42
+
+model:
+  id: t5-small-ia3
+  name: google-t5/t5-small
+  architecture: seq2seq
+  role: T5-small fine-tuned with IA3
+  adapter_path: outputs/t5-small-wikisql-ia3/adapter
+
+dataset:
+  name: Salesforce/wikisql
+  split: validation
+  sample_size: 30
+  sample_strategy: random
+
+prompt:
+  max_source_length: 384
+  max_new_tokens: 96
+
+generation:
+  do_sample: false
+  temperature: 0.0
+
+fine_tuning:
+  technique: IA3
+  base_model: google-t5/t5-small
+  dataset: Salesforce/wikisql
+  train_split: train
+  eval_split: validation
+  train_examples: 56355
+  eval_examples: 256
+  epochs: 1
+  train_limit: null
+  adapter: IA3 learned activation scaling on k/v attention projections and wi feed-forward modules
+  quantization: None
+  eval_metrics_path: outputs/t5-small-wikisql-ia3/eval_metrics.json
+
+reporting:
+  preview_limit: 20
+
+output:
+  dir: benchmark_results/ia3
+  index_path: benchmark_results/ia3/ia3_wikisql_index.json

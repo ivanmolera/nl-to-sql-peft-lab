@@ -7,6 +7,7 @@ const state = {
 };
 
 const els = {
+  selectedModeLabel: document.querySelector("#selected-mode-label"),
   version: document.querySelector("#app-version"),
   source: document.querySelector("#result-source"),
   modeTabs: document.querySelector("#benchmark-mode-tabs"),
@@ -100,6 +101,7 @@ async function loadVersion() {
 async function loadBenchmarks() {
   const mode = state.selectedMode || "zero-shot";
   const data = await api(`/api/benchmarks?mode=${encodeURIComponent(mode)}`);
+  els.selectedModeLabel.textContent = data.label || "Benchmark run";
   els.modeDescription.textContent = data.available
     ? data.description || ""
     : `${data.description || ""} · results pending`;
