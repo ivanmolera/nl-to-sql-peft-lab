@@ -44,6 +44,12 @@ const METRIC_DEFINITIONS = {
   token_f1: "Token-level precision and recall combined into an F1 score between the generated SQL and the reference SQL.",
   latency: "Average model generation time per example, measured in seconds.",
   eval_loss: "Validation loss reported by the trainer during the post-training evaluation pass.",
+  training_time: "Total wall-clock time spent by the fine-tuning job, measured from trainer start to trainer end.",
+  train_steps_per_second: "Training throughput reported by Hugging Face Trainer as optimizer steps completed per second.",
+  cpu_utilization: "Estimated process CPU utilization during fine-tuning, normalized by available CPU cores.",
+  gpu_utilization: "Mean and peak GPU utilization sampled with nvidia-smi during fine-tuning.",
+  gpu_memory: "Mean and peak GPU memory allocated during fine-tuning, sampled from the training GPU.",
+  ram_usage: "Peak resident memory used by the training process.",
 };
 
 async function api(path, options = {}) {
@@ -134,7 +140,9 @@ async function loadBenchmarks() {
   els.leaderboard.innerHTML = data.models
     .map((model) => {
       const metrics = model.metrics;
-      const trainerMetrics = data.benchmark?.fine_tuning?.trainer_eval_metrics || null;
+      const trainerMetrics = model.training?.trainer_eval_metrics
+        || data.benchmark?.fine_tuning?.trainer_eval_metrics
+        || null;
       const hasTrainerMetrics = trainerMetrics && trainerMetrics.eval_exact_match !== undefined;
       const score = hasTrainerMetrics
         ? pct(trainerMetrics.eval_exact_match)
@@ -153,6 +161,7 @@ async function loadBenchmarks() {
           <div class="metric-row aux"><span>${metricLabel("execution_accuracy", "Benchmark execution")}</span><strong>${pct(metrics.execution_accuracy)}</strong></div>
           <div class="metric-row aux"><span>${metricLabel("valid_sql", "Benchmark valid SQL")}</span><strong>${pct(metrics.sql_validity)}</strong></div>
           <div class="metric-row aux"><span>${metricLabel("latency", "Benchmark latency")}</span><strong>${seconds(metrics.latency_seconds_per_example)}</strong></div>
+          ${hasTrainerMetrics ? renderTrainingResources(trainerMetrics) : ""}
         </article>
       `;
     })
@@ -172,6 +181,26 @@ function renderTrainerMetrics(metrics) {
     <div class="metric-row"><span>${metricLabel("rouge_l", "Training eval ROUGE-L")}</span><strong>${pct(metrics.eval_rouge_l)}</strong></div>
     <div class="metric-row"><span>${metricLabel("token_f1", "Training eval Token F1")}</span><strong>${pct(metrics.eval_token_f1)}</strong></div>
     <div class="metric-row aux"><span>${metricLabel("eval_loss", "Training eval loss")}</span><strong>${number(metrics.eval_loss)}</strong></div>
+  `;
+}
+
+function renderTrainingResources(metrics) {
+  const trainMetrics = metrics.train_metrics || {};
+  const resources = metrics.resource_metrics || {};
+  if (!Object.keys(trainMetrics).length && !Object.keys(resources).length) {
+    return "";
+  }
+  return `
+    <div class="resource-block">
+      <h4>Training Runtime & Resources</h4>
+      <div class="metric-row resource"><span>${metricLabel("training_time", "Fine-tuning wall time")}</span><strong>${minutes(resources.training_wall_time_minutes)}</strong></div>
+      <div class="metric-row resource"><span>${metricLabel("training_time", "Trainer runtime")}</span><strong>${minutesFromSeconds(trainMetrics.train_runtime)}</strong></div>
+      <div class="metric-row resource"><span>${metricLabel("train_steps_per_second", "Train steps/s")}</span><strong>${number(trainMetrics.train_steps_per_second)}</strong></div>
+      <div class="metric-row resource"><span>${metricLabel("gpu_utilization", "GPU utilization mean / peak")}</span><strong>${percent(resources.gpu_utilization_mean_percent)} / ${percent(resources.gpu_utilization_peak_percent)}</strong></div>
+      <div class="metric-row resource"><span>${metricLabel("gpu_memory", "GPU memory mean / peak")}</span><strong>${mb(resources.gpu_memory_used_mean_mb)} / ${mb(resources.gpu_memory_used_peak_mb)}</strong></div>
+      <div class="metric-row resource"><span>${metricLabel("cpu_utilization", "CPU utilization")}</span><strong>${percent(resources.cpu_utilization_estimated_percent)}</strong></div>
+      <div class="metric-row resource"><span>${metricLabel("ram_usage", "Peak RAM RSS")}</span><strong>${mb(resources.process_max_rss_mb)}</strong></div>
+    </div>
   `;
 }
 
@@ -273,6 +302,8 @@ function renderBenchmarkDetails(benchmark = {}, dataset = {}) {
   const generation = benchmark.generation || {};
   const fineTuning = benchmark.fine_tuning || {};
   const trainerMetrics = fineTuning.trainer_eval_metrics || {};
+  const trainMetrics = trainerMetrics.train_metrics || {};
+  const resources = trainerMetrics.resource_metrics || {};
   const sampleSize = benchmark.sample_size ?? dataset?.sample_size;
   const callsPerModel = benchmark.calls_per_model ?? sampleSize;
   const totalCalls = benchmark.total_model_calls ?? (
@@ -307,6 +338,13 @@ function renderBenchmarkDetails(benchmark = {}, dataset = {}) {
     ["Training examples", formatNullable(fineTuning.train_examples)],
     ["Training epochs", formatNullable(fineTuning.epochs)],
     ["Training eval examples", formatNullable(fineTuning.eval_examples)],
+    [metricLabel("training_time", "Fine-tuning wall time"), minutes(resources.training_wall_time_minutes)],
+    [metricLabel("training_time", "Trainer runtime"), minutesFromSeconds(trainMetrics.train_runtime)],
+    [metricLabel("train_steps_per_second", "Train steps/s"), number(trainMetrics.train_steps_per_second)],
+    [metricLabel("cpu_utilization", "CPU utilization"), percent(resources.cpu_utilization_estimated_percent)],
+    [metricLabel("gpu_utilization", "GPU utilization mean / peak"), `${percent(resources.gpu_utilization_mean_percent)} / ${percent(resources.gpu_utilization_peak_percent)}`],
+    [metricLabel("gpu_memory", "GPU memory mean / peak"), `${mb(resources.gpu_memory_used_mean_mb)} / ${mb(resources.gpu_memory_used_peak_mb)}`],
+    [metricLabel("ram_usage", "Peak RAM RSS"), mb(resources.process_max_rss_mb)],
     [metricLabel("exact_match", "Trainer eval EM"), trainerMetrics.eval_exact_match !== undefined ? pct(trainerMetrics.eval_exact_match) : null],
     [metricLabel("bleu", "Trainer eval BLEU"), trainerMetrics.eval_bleu !== undefined ? pct(trainerMetrics.eval_bleu) : null],
     [metricLabel("rouge_l", "Trainer eval ROUGE-L"), trainerMetrics.eval_rouge_l !== undefined ? pct(trainerMetrics.eval_rouge_l) : null],
@@ -332,6 +370,28 @@ function formatNullable(value) {
 function number(value) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) return "n/a";
   return Number(value).toFixed(3);
+}
+
+function minutes(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return "n/a";
+  return `${Number(value).toFixed(1)} min`;
+}
+
+function minutesFromSeconds(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return "n/a";
+  return minutes(Number(value) / 60);
+}
+
+function percent(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return "n/a";
+  return `${Number(value).toFixed(1)}%`;
+}
+
+function mb(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return "n/a";
+  const numeric = Number(value);
+  if (numeric >= 1024) return `${(numeric / 1024).toFixed(2)} GB`;
+  return `${numeric.toFixed(0)} MB`;
 }
 
 async function loadModels() {

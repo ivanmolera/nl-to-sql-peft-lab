@@ -318,6 +318,28 @@ main {
   color: #4f6230;
 }
 
+.resource-block {
+  margin-top: 12px;
+  padding-top: 4px;
+}
+
+.resource-block h4 {
+  margin: 8px 0 4px;
+  color: var(--accent-strong);
+  font-size: 0.78rem;
+  font-weight: 850;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.metric-row.resource {
+  color: #5b6d77;
+}
+
+.metric-row.resource strong {
+  color: #243845;
+}
+
 .workspace {
   display: grid;
   grid-template-columns: 1fr;
