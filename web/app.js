@@ -229,6 +229,8 @@ function formatGpu(runtime = {}) {
 
 function renderBenchmarkDetails(benchmark = {}, dataset = {}) {
   const generation = benchmark.generation || {};
+  const fineTuning = benchmark.fine_tuning || {};
+  const trainerMetrics = fineTuning.trainer_eval_metrics || {};
   const sampleSize = benchmark.sample_size ?? dataset?.sample_size;
   const callsPerModel = benchmark.calls_per_model ?? sampleSize;
   const totalCalls = benchmark.total_model_calls ?? (
@@ -257,6 +259,10 @@ function renderBenchmarkDetails(benchmark = {}, dataset = {}) {
     ["Sample size", formatNullable(sampleSize)],
     ["Calls/model", formatNullable(callsPerModel)],
     ["Total calls", formatNullable(totalCalls)],
+    ["Fine-tuning", fineTuning.technique],
+    ["Training examples", formatNullable(fineTuning.train_examples)],
+    ["Training epochs", formatNullable(fineTuning.epochs)],
+    ["Trainer eval EM", trainerMetrics.eval_exact_match !== undefined ? pct(trainerMetrics.eval_exact_match) : null],
     ["Models", formatNullable(benchmark.models_evaluated)],
     ["Sampling", benchmark.sample_strategy],
     ["Seed", formatNullable(benchmark.seed)],
