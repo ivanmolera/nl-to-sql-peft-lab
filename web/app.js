@@ -44,8 +44,11 @@ const METRIC_DEFINITIONS = {
   token_f1: "Token-level precision and recall combined into an F1 score between the generated SQL and the reference SQL.",
   latency: "Average model generation time per example, measured in seconds.",
   eval_loss: "Validation loss reported by the trainer during the post-training evaluation pass.",
+  best_epoch: "Training epoch where the best validation loss was observed. This is the selected checkpoint point, not a proof of absolute convergence.",
+  best_step: "Optimizer step of the selected checkpoint with the best validation loss.",
+  best_metric: "Best validation loss used to select the final checkpoint. Lower is better.",
   training_time: "Total wall-clock time spent by the fine-tuning job, measured from trainer start to trainer end.",
-  train_steps_per_second: "Training throughput reported by Hugging Face Trainer as optimizer steps completed per second.",
+  train_steps_per_second: "Training throughput reported by Hugging Face Trainer as optimizer steps completed per second. This is speed, not total steps.",
   cpu_utilization: "Estimated process CPU utilization during fine-tuning, normalized by available CPU cores.",
   gpu_utilization: "Mean and peak GPU utilization sampled with nvidia-smi during fine-tuning.",
   gpu_memory: "Mean and peak GPU memory allocated during fine-tuning, sampled from the training GPU.",
@@ -193,9 +196,12 @@ function renderTrainingResources(metrics) {
   return `
     <div class="resource-block">
       <h4>Training Runtime & Resources</h4>
+      <div class="metric-row resource"><span>${metricLabel("best_epoch", "Best eval-loss epoch")}</span><strong>${number(metrics.epoch)}</strong></div>
+      <div class="metric-row resource"><span>${metricLabel("best_step", "Best eval-loss step")}</span><strong>${integer(stepFromCheckpoint(metrics.best_model_checkpoint) ?? metrics.global_step)}</strong></div>
+      <div class="metric-row resource"><span>${metricLabel("best_metric", "Best eval loss")}</span><strong>${number(metrics.best_metric ?? metrics.eval_loss)}</strong></div>
       <div class="metric-row resource"><span>${metricLabel("training_time", "Fine-tuning wall time")}</span><strong>${minutes(resources.training_wall_time_minutes)}</strong></div>
       <div class="metric-row resource"><span>${metricLabel("training_time", "Trainer runtime")}</span><strong>${minutesFromSeconds(trainMetrics.train_runtime)}</strong></div>
-      <div class="metric-row resource"><span>${metricLabel("train_steps_per_second", "Train steps/s")}</span><strong>${number(trainMetrics.train_steps_per_second)}</strong></div>
+      <div class="metric-row resource"><span>${metricLabel("train_steps_per_second", "Training speed")}</span><strong>${stepsPerSecond(trainMetrics.train_steps_per_second)}</strong></div>
       <div class="metric-row resource"><span>${metricLabel("gpu_utilization", "GPU utilization mean / peak")}</span><strong>${percent(resources.gpu_utilization_mean_percent)} / ${percent(resources.gpu_utilization_peak_percent)}</strong></div>
       <div class="metric-row resource"><span>${metricLabel("gpu_memory", "GPU memory mean / peak")}</span><strong>${mb(resources.gpu_memory_used_mean_mb)} / ${mb(resources.gpu_memory_used_peak_mb)}</strong></div>
       <div class="metric-row resource"><span>${metricLabel("cpu_utilization", "CPU utilization")}</span><strong>${percent(resources.cpu_utilization_estimated_percent)}</strong></div>
@@ -336,11 +342,14 @@ function renderBenchmarkDetails(benchmark = {}, dataset = {}) {
     ["Training split", fineTuning.train_split],
     ["Training limit", fineTuning.train_limit === null ? "Full split" : formatNullable(fineTuning.train_limit)],
     ["Training examples", formatNullable(fineTuning.train_examples)],
-    ["Training epochs", formatNullable(fineTuning.epochs)],
+    ["Max training epochs", formatNullable(fineTuning.epochs)],
     ["Training eval examples", formatNullable(fineTuning.eval_examples)],
+    [metricLabel("best_epoch", "Best eval-loss epoch"), number(trainerMetrics.epoch)],
+    [metricLabel("best_step", "Best eval-loss step"), integer(stepFromCheckpoint(trainerMetrics.best_model_checkpoint) ?? trainerMetrics.global_step)],
+    [metricLabel("best_metric", "Best eval loss"), number(trainerMetrics.best_metric ?? trainerMetrics.eval_loss)],
     [metricLabel("training_time", "Fine-tuning wall time"), minutes(resources.training_wall_time_minutes)],
     [metricLabel("training_time", "Trainer runtime"), minutesFromSeconds(trainMetrics.train_runtime)],
-    [metricLabel("train_steps_per_second", "Train steps/s"), number(trainMetrics.train_steps_per_second)],
+    [metricLabel("train_steps_per_second", "Training speed"), stepsPerSecond(trainMetrics.train_steps_per_second)],
     [metricLabel("cpu_utilization", "CPU utilization"), percent(resources.cpu_utilization_estimated_percent)],
     [metricLabel("gpu_utilization", "GPU utilization mean / peak"), `${percent(resources.gpu_utilization_mean_percent)} / ${percent(resources.gpu_utilization_peak_percent)}`],
     [metricLabel("gpu_memory", "GPU memory mean / peak"), `${mb(resources.gpu_memory_used_mean_mb)} / ${mb(resources.gpu_memory_used_peak_mb)}`],
@@ -372,14 +381,42 @@ function number(value) {
   return Number(value).toFixed(3);
 }
 
+function integer(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return "n/a";
+  return Number(value).toLocaleString("en-US", { maximumFractionDigits: 0 });
+}
+
+function stepsPerSecond(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return "n/a";
+  return `${Number(value).toFixed(3)} steps/s`;
+}
+
+function stepFromCheckpoint(checkpoint) {
+  const match = String(checkpoint || "").match(/checkpoint-(\d+)/);
+  return match ? Number(match[1]) : null;
+}
+
 function minutes(value) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) return "n/a";
-  return `${Number(value).toFixed(1)} min`;
+  return durationFromSeconds(Number(value) * 60);
 }
 
 function minutesFromSeconds(value) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) return "n/a";
-  return minutes(Number(value) / 60);
+  return durationFromSeconds(Number(value));
+}
+
+function durationFromSeconds(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return "n/a";
+  const totalSeconds = Math.max(0, Math.round(Number(value)));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutesValue = Math.floor((totalSeconds % 3600) / 60);
+  const secondsValue = totalSeconds % 60;
+  const paddedMinutes = String(minutesValue).padStart(hours ? 2 : 1, "0");
+  const paddedSeconds = String(secondsValue).padStart(2, "0");
+  if (hours) return `${hours}h ${paddedMinutes}m ${paddedSeconds}s`;
+  if (minutesValue) return `${minutesValue}m ${paddedSeconds}s`;
+  return `${secondsValue}s`;
 }
 
 function percent(value) {
