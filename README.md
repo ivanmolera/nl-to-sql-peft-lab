@@ -3,18 +3,23 @@
 Parameter-Efficient Fine-Tuning technique comparison for NL-to-SQL on small
 generative models.
 
-This repository starts with a minimal, reproducible pipeline for:
+NL-to-SQL PEFT Lab is a reproducible experimentation platform for evaluating how
+parameter-efficient fine-tuning techniques affect small language models on the
+WikiSQL text-to-SQL task. It combines training pipelines, benchmark scripts, stored
+evaluation artifacts, and a web dashboard where users can compare results and test
+trained variants on real WikiSQL examples.
 
-- Model: `google-t5/t5-small`
-- Dataset: `Salesforce/wikisql`
-- Technique: QLoRA, implemented as 4-bit quantization plus LoRA adapters
+The project currently focuses on `google-t5/t5-small` for PEFT experiments, with
+zero-shot baselines for `google-t5/t5-small`, `HuggingFaceTB/SmolLM2-135M-Instruct`,
+and `Qwen/Qwen2.5-Coder-0.5B-Instruct`. The benchmark dataset is
+`Salesforce/wikisql`, and the PEFT comparison covers QLoRA, BitFit, Prefix Tuning,
+and IA3.
 
-The first goal is to validate the full loop: load WikiSQL, build canonical SQL targets,
-fine-tune with PEFT, evaluate exact-match, and save the adapter/checkpoint artifacts.
-
-Before fine-tuning, the project can also run a zero-shot baseline over the selected
-models. That lets the web app show the comparative dashboard and example-level analysis
-without waiting for PEFT jobs.
+The web app is designed as both an analysis dashboard and an interactive playground:
+it displays benchmark metrics such as exact match, SQL validity, execution accuracy,
+latency, BLEU, ROUGE-L, and Token F1, while also allowing users to generate SQL from
+selected WikiSQL natural-language questions using either base models or available
+fine-tuned PEFT adapters.
 
 ## Academic Background
 
