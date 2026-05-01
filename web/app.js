@@ -1,5 +1,6 @@
 const state = {
-  models: [],
+  benchmarkModels: [],
+  liveModels: [],
   examples: [],
   exampleOffset: 0,
   selectedMode: "zero-shot",
@@ -91,7 +92,7 @@ async function loadBenchmarks() {
   els.modeDescription.textContent = data.available
     ? data.description || ""
     : `${data.description || ""} · results pending`;
-  state.models = data.models;
+  state.benchmarkModels = data.models;
   els.source.textContent = data.is_demo
     ? "Demo results"
     : data.source
@@ -283,9 +284,27 @@ function formatNullable(value) {
 
 async function loadModels() {
   const data = await api("/api/models");
-  els.modelSelect.innerHTML = data.models
+  state.liveModels = data.models;
+  renderModelOptions();
+}
+
+function renderModelOptions() {
+  const models = liveModelsForSelectedMode();
+  els.modelSelect.innerHTML = models
     .map((model) => `<option value="${model.id}">${shortName(model.name)}</option>`)
     .join("");
+  els.modelSelect.disabled = models.length === 0;
+  els.run.disabled = models.length === 0;
+  if (!models.length) {
+    els.runMeta.textContent = "No live model available for this technique yet";
+  }
+}
+
+function liveModelsForSelectedMode() {
+  if (state.selectedMode === "zero-shot") {
+    return state.liveModels.filter((model) => !model.is_fine_tuned);
+  }
+  return state.liveModels.filter((model) => model.peft_method === state.selectedMode);
 }
 
 async function loadExamples() {
@@ -356,6 +375,7 @@ async function runGeneration() {
       body: JSON.stringify({
         model_id: els.modelSelect.value,
         example_index: example.index,
+        peft_method: state.selectedMode,
       }),
     });
 
@@ -387,6 +407,8 @@ function bindEvents() {
     state.selectedMode = button.dataset.mode;
     await loadBenchmarkModes();
     await loadBenchmarks();
+    renderModelOptions();
+    resetResult();
   });
   els.exampleSelect.addEventListener("change", renderSelectedExample);
   els.run.addEventListener("click", runGeneration);

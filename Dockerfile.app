@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 ENV APP_DOCKER_IMAGE=europe-west1-docker.pkg.dev/nl-sql-peft-lab-ivan-0429/nl-to-sql-peft-lab/app:latest
 ENV APP_RUNTIME=docker
-ENV APP_VERSION=v0.1.0
+ENV APP_VERSION=v0.1.1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 

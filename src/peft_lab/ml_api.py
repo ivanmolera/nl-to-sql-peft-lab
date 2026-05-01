@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import time
+from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
 import yaml
 from fastapi import FastAPI, HTTPException
+from peft import PeftModel
 from pydantic import BaseModel
+from transformers import AutoTokenizer
 
 from peft_lab.data import build_prompt, load_wikisql_split
 from peft_lab.evaluate_zero_shot import ModelSpec, generate_sql, load_model
@@ -20,8 +23,28 @@ from peft_lab.wikisql import get_table
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 BASELINE_CONFIG = ROOT_DIR / "configs" / "zero_shot_wikisql_baseline.yaml"
+QLORA_T5_ADAPTER = ROOT_DIR / "model_artifacts" / "qlora" / "t5-small-wikisql-qlora" / "adapter"
 
-app = FastAPI(title="NL-to-SQL PEFT Lab ML API", version="0.1.0")
+app = FastAPI(title="NL-to-SQL PEFT Lab ML API", version="0.1.1")
+
+
+@dataclass
+class LiveModelSpec:
+    id: str
+    name: str
+    architecture: str
+    role: str
+    base_model_name: str | None = None
+    adapter_path: str | None = None
+    peft_method: str | None = None
+
+    def generation_spec(self) -> ModelSpec:
+        return ModelSpec(
+            id=self.id,
+            name=self.base_model_name or self.name,
+            architecture=self.architecture,
+            role=self.role,
+        )
 
 
 class GenerateRequest(BaseModel):
@@ -75,14 +98,14 @@ def generate(request: GenerateRequest) -> dict[str, Any]:
     if request.example_index < 0 or request.example_index >= len(dataset):
         raise HTTPException(status_code=404, detail="Unknown WikiSQL example")
 
-    if request.peft_method and request.peft_method != "zero-shot":
+    model_spec = model_specs[request.model_id]
+    if request.peft_method and request.peft_method not in {"zero-shot", model_spec.peft_method}:
         raise HTTPException(
             status_code=501,
-            detail=f"PEFT method '{request.peft_method}' is not available for live inference yet",
+            detail=f"PEFT method '{request.peft_method}' is not available for {model_spec.id}",
         )
 
     example = dataset[request.example_index]
-    model_spec = model_specs[request.model_id]
     tokenizer, model = get_loaded_model(model_spec.id)
 
     started_at = time.perf_counter()
@@ -128,33 +151,57 @@ def get_dataset():
 
 
 @lru_cache(maxsize=1)
-def get_model_specs() -> dict[str, ModelSpec]:
-    return {
-        model_config["id"]: ModelSpec(**model_config)
+def get_model_specs() -> dict[str, LiveModelSpec]:
+    specs = {
+        model_config["id"]: LiveModelSpec(**model_config)
         for model_config in get_config()["models"]
     }
+    if QLORA_T5_ADAPTER.exists():
+        specs["t5-small-qlora"] = LiveModelSpec(
+            id="t5-small-qlora",
+            name="google-t5/t5-small + QLoRA",
+            architecture="seq2seq",
+            role="T5-small fine-tuned on WikiSQL with QLoRA",
+            base_model_name="google-t5/t5-small",
+            adapter_path=str(QLORA_T5_ADAPTER),
+            peft_method="qlora",
+        )
+    return specs
 
 
-@lru_cache(maxsize=3)
+@lru_cache(maxsize=4)
 def get_loaded_model(model_id: str):
     model_spec = get_model_specs()[model_id]
-    tokenizer = __import__("transformers").AutoTokenizer.from_pretrained(
-        model_spec.name,
+    tokenizer_source = model_spec.adapter_path or model_spec.base_model_name or model_spec.name
+    tokenizer = AutoTokenizer.from_pretrained(
+        tokenizer_source,
         trust_remote_code=True,
     )
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
-    model = load_model(model_spec, get_config())
+    model = load_live_model(model_spec)
     model.eval()
     return tokenizer, model
 
 
-def serialize_model(model_spec: ModelSpec) -> dict[str, Any]:
+def load_live_model(model_spec: LiveModelSpec):
+    if model_spec.adapter_path:
+        if model_spec.architecture != "seq2seq":
+            raise ValueError(f"Unsupported adapter architecture: {model_spec.architecture}")
+        base_model = load_model(model_spec.generation_spec(), get_config())
+        return PeftModel.from_pretrained(base_model, model_spec.adapter_path)
+    return load_model(model_spec.generation_spec(), get_config())
+
+
+def serialize_model(model_spec: LiveModelSpec) -> dict[str, Any]:
     return {
         "id": model_spec.id,
         "name": model_spec.name,
         "architecture": model_spec.architecture,
         "role": model_spec.role,
+        "base_model_name": model_spec.base_model_name,
+        "peft_method": model_spec.peft_method,
+        "is_fine_tuned": model_spec.adapter_path is not None,
     }
 
 

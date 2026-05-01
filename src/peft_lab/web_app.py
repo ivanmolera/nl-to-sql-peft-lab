@@ -64,7 +64,7 @@ BENCHMARK_MODES = [
     },
 ]
 
-app = FastAPI(title="NL-to-SQL PEFT Lab", version="0.1.0")
+app = FastAPI(title="NL-to-SQL PEFT Lab", version="0.1.1")
 app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
 
 
@@ -88,8 +88,8 @@ def app_version() -> dict[str, Any]:
 
 
 @app.get("/api/models")
-def models() -> dict[str, Any]:
-    return {"models": [serialize_model(spec) for spec in get_model_specs()]}
+async def models() -> dict[str, Any]:
+    return await proxy_ml_get("/api/models", {})
 
 
 @app.get("/api/benchmarks")
