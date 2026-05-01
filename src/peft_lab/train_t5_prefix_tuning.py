@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import random
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -25,8 +26,8 @@ from peft_lab.metrics import bleu_score, exact_match_score, rouge_l_score, token
 from peft_lab.training_utils import (
     add_best_model_metadata,
     add_training_run_metadata,
-    best_model_training_args,
-    build_early_stopping_callbacks,
+    best_metric_training_args,
+    build_manual_best_peft_callback,
     ResourceMonitor,
 )
 
@@ -69,6 +70,7 @@ def main() -> None:
         config["prompt"]["max_target_length"],
     )
 
+    best_callback = build_manual_best_peft_callback(config)
     trainer = Seq2SeqTrainer(
         model=model,
         args=build_training_args(config),
@@ -81,16 +83,17 @@ def main() -> None:
         ),
         tokenizer=tokenizer,
         compute_metrics=build_compute_metrics(tokenizer),
-        callbacks=build_early_stopping_callbacks(config),
+        callbacks=[best_callback],
     )
 
     resource_monitor = ResourceMonitor()
     resource_monitor.start()
     train_result = trainer.train()
     resource_metrics = resource_monitor.stop()
-    metrics = add_best_model_metadata(trainer.evaluate(), trainer)
+    metrics = best_callback.best_metrics or trainer.evaluate()
+    metrics = add_best_model_metadata(metrics, trainer)
     metrics = add_training_run_metadata(metrics, train_result.metrics, resource_metrics)
-    trainer.save_model(output_dir / "adapter")
+    save_best_adapter(best_callback.best_model_checkpoint, output_dir / "adapter", trainer)
     tokenizer.save_pretrained(output_dir / "adapter")
     save_json(output_dir / "eval_metrics.json", metrics)
 
@@ -124,8 +127,21 @@ def build_training_args(config: dict[str, Any]) -> Seq2SeqTrainingArguments:
         report_to="none",
         fp16=torch.cuda.is_available() and not torch.cuda.is_bf16_supported(),
         bf16=torch.cuda.is_available() and torch.cuda.is_bf16_supported(),
-        **best_model_training_args(training),
+        **best_metric_training_args(training),
     )
+
+
+def save_best_adapter(
+    best_checkpoint: str | None,
+    adapter_dir: Path,
+    trainer: Seq2SeqTrainer,
+) -> None:
+    if best_checkpoint and Path(best_checkpoint).exists():
+        if adapter_dir.exists():
+            shutil.rmtree(adapter_dir)
+        shutil.copytree(best_checkpoint, adapter_dir)
+        return
+    trainer.save_model(adapter_dir)
 
 
 def build_compute_metrics(tokenizer: AutoTokenizer):

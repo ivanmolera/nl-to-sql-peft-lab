@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import os
 import resource
+import shutil
 import subprocess
 import threading
 import time
+from pathlib import Path
 from typing import Any
 
 import torch
@@ -89,9 +91,90 @@ def build_early_stopping_callbacks(config: dict[str, Any]) -> list[TrainerCallba
     ]
 
 
+class SaveBestPeftModelCallback(TrainerCallback):
+    """Save the best PEFT adapter and stop after patience evaluations without improvement."""
+
+    def __init__(
+        self,
+        metric_name: str = "eval_loss",
+        greater_is_better: bool = False,
+        patience: int = 3,
+        threshold: float = 0.0,
+        output_dir_name: str = "best_adapter",
+    ) -> None:
+        self.metric_name = metric_name
+        self.greater_is_better = greater_is_better
+        self.patience = patience
+        self.threshold = threshold
+        self.output_dir_name = output_dir_name
+        self.best_metric: float | None = None
+        self.best_metrics: dict[str, Any] | None = None
+        self.best_model_checkpoint: str | None = None
+        self.bad_evaluations = 0
+
+    def on_evaluate(self, args, state, control, metrics=None, model=None, **kwargs):
+        if not metrics or model is None:
+            return control
+
+        metric_value = metrics.get(self.metric_name)
+        if metric_value is None and not self.metric_name.startswith("eval_"):
+            metric_value = metrics.get(f"eval_{self.metric_name}")
+        if metric_value is None:
+            return control
+
+        metric_value = float(metric_value)
+        if self._is_improvement(metric_value):
+            self.best_metric = metric_value
+            self.best_metrics = dict(metrics)
+            self.bad_evaluations = 0
+            output_dir = Path(args.output_dir) / self.output_dir_name
+            if output_dir.exists():
+                shutil.rmtree(output_dir)
+            model.save_pretrained(output_dir)
+            self.best_model_checkpoint = str(output_dir)
+            state.best_metric = metric_value
+            state.best_model_checkpoint = str(output_dir)
+        else:
+            self.bad_evaluations += 1
+            if self.bad_evaluations >= self.patience:
+                control.should_training_stop = True
+
+        return control
+
+    def _is_improvement(self, metric_value: float) -> bool:
+        if self.best_metric is None:
+            return True
+        if self.greater_is_better:
+            return metric_value > self.best_metric + self.threshold
+        return metric_value < self.best_metric - self.threshold
+
+
+def build_manual_best_peft_callback(config: dict[str, Any]) -> SaveBestPeftModelCallback:
+    training = config.get("training", {})
+    early_stopping = training.get("early_stopping", {})
+    return SaveBestPeftModelCallback(
+        metric_name=training.get("metric_for_best_model", "eval_loss"),
+        greater_is_better=training.get("greater_is_better", False),
+        patience=early_stopping.get("patience", 3),
+        threshold=early_stopping.get("threshold", 0.0),
+    )
+
+
 def best_model_training_args(training: dict[str, Any]) -> dict[str, Any]:
     keys = [
         "load_best_model_at_end",
+        "metric_for_best_model",
+        "greater_is_better",
+    ]
+    return {
+        key: training[key]
+        for key in keys
+        if key in training
+    }
+
+
+def best_metric_training_args(training: dict[str, Any]) -> dict[str, Any]:
+    keys = [
         "metric_for_best_model",
         "greater_is_better",
     ]

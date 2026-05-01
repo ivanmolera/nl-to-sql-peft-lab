@@ -33,7 +33,7 @@ training:
   save_total_limit: 3
   predict_with_generate: true
   generation_max_length: 128
-  load_best_model_at_end: true
+  load_best_model_at_end: false
   metric_for_best_model: eval_loss
   greater_is_better: false
   early_stopping:
