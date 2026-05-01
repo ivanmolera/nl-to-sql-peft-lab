@@ -1,6 +1,7 @@
 # NL-to-SQL PEFT Lab
 
-Comparativa de tecnicas PEFT para NL-to-SQL en modelos generativos pequenos.
+Parameter-Efficient Fine-Tuning technique comparison for NL-to-SQL on small
+generative models.
 
 This repository starts with a minimal, reproducible pipeline for:
 
@@ -14,6 +15,17 @@ fine-tune with PEFT, evaluate exact-match, and save the adapter/checkpoint artif
 Before fine-tuning, the project can also run a zero-shot baseline over the selected
 models. That lets the web app show the comparative dashboard and example-level analysis
 without waiting for PEFT jobs.
+
+## Academic Background
+
+This project is based on the work carried out by Antoni Carrasco Martinez and Ivan
+Molera Gomez for their Master's Final Project in Artificial Intelligence at UNIR. The
+original work uses a different set of base models, while this repository adapts the
+experimental direction to small Hugging Face models and a web-based PEFT comparison
+lab for NL-to-SQL.
+
+Original Master's Final Project record:
+https://reunir.unir.net/handle/123456789/19416
 
 ## Setup
 
@@ -319,6 +331,8 @@ PEFT techniques:
 
 ## References
 
+- Carrasco Martinez, Antoni, and Molera Gomez, Ivan. Master's Final Project in
+  Artificial Intelligence, UNIR: https://reunir.unir.net/handle/123456789/19416
 - T5-small model card: https://huggingface.co/google-t5/t5-small
 - SmolLM2-135M-Instruct model card: https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct
 - Qwen2.5-Coder-0.5B-Instruct model card: https://huggingface.co/Qwen/Qwen2.5-Coder-0.5B-Instruct
