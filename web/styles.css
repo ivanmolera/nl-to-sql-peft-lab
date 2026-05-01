@@ -244,6 +244,72 @@ main {
   color: var(--text);
 }
 
+.metric-help {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  cursor: help;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.metric-help::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 9px);
+  left: 0;
+  z-index: 20;
+  width: min(280px, 70vw);
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--code);
+  color: var(--code-text);
+  box-shadow: 0 10px 30px rgba(16, 24, 32, 0.2);
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.35;
+  opacity: 0;
+  pointer-events: none;
+  text-transform: none;
+  transform: translateY(4px);
+  transition: opacity 0.14s ease, transform 0.14s ease;
+  white-space: normal;
+}
+
+.metric-help::before {
+  content: "";
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 12px;
+  z-index: 21;
+  width: 10px;
+  height: 10px;
+  background: var(--code);
+  opacity: 0;
+  pointer-events: none;
+  transform: rotate(45deg);
+  transition: opacity 0.14s ease;
+}
+
+.metric-help:hover::after,
+.metric-help:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.metric-help:hover::before,
+.metric-help:focus-visible::before {
+  opacity: 1;
+}
+
+.metric-help:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
 .metric-row.aux {
   color: #6d7a55;
 }

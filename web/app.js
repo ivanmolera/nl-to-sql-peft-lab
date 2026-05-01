@@ -34,6 +34,17 @@ const els = {
   runtimeGrid: document.querySelector("#runtime-grid"),
 };
 
+const METRIC_DEFINITIONS = {
+  exact_match: "Percentage of predictions whose normalized SQL exactly matches the reference query.",
+  execution_accuracy: "Percentage of predictions that return the same result as the reference SQL when executed against the WikiSQL table.",
+  valid_sql: "Percentage of generated outputs that can be parsed and executed as SQL for the example table.",
+  bleu: "N-gram overlap between generated SQL and reference SQL. Useful as an auxiliary similarity metric, not as proof of semantic correctness.",
+  rouge_l: "Longest-common-subsequence overlap between generated SQL and reference SQL. Useful as an auxiliary sequence similarity metric.",
+  token_f1: "Token-level precision and recall combined into an F1 score between the generated SQL and the reference SQL.",
+  latency: "Average model generation time per example, measured in seconds.",
+  eval_loss: "Validation loss reported by the trainer during the post-training evaluation pass.",
+};
+
 async function api(path, options = {}) {
   const response = await fetch(path, {
     headers: { "Content-Type": "application/json" },
@@ -121,6 +132,11 @@ async function loadBenchmarks() {
   els.leaderboard.innerHTML = data.models
     .map((model) => {
       const metrics = model.metrics;
+      const trainerMetrics = data.benchmark?.fine_tuning?.trainer_eval_metrics || null;
+      const hasTrainerMetrics = trainerMetrics && trainerMetrics.eval_exact_match !== undefined;
+      const score = hasTrainerMetrics
+        ? pct(trainerMetrics.eval_exact_match)
+        : pct(metrics.execution_accuracy);
       return `
         <article class="model-card">
           <header>
@@ -128,14 +144,13 @@ async function loadBenchmarks() {
               <h2>${shortName(model.name)}</h2>
               <small>${model.role}</small>
             </div>
-            <div class="score">${pct(metrics.execution_accuracy)}</div>
+            <div class="score">${score}</div>
           </header>
-          <div class="metric-row"><span>Exact match</span><strong>${pct(metrics.exact_match)}</strong></div>
-          <div class="metric-row aux"><span>BLEU</span><strong>${pct(metrics.bleu)}</strong></div>
-          <div class="metric-row aux"><span>ROUGE-L</span><strong>${pct(metrics.rouge_l)}</strong></div>
-          <div class="metric-row aux"><span>Token F1</span><strong>${pct(metrics.token_f1)}</strong></div>
-          <div class="metric-row"><span>Valid SQL</span><strong>${pct(metrics.sql_validity)}</strong></div>
-          <div class="metric-row"><span>Latency</span><strong>${seconds(metrics.latency_seconds_per_example)}</strong></div>
+          ${hasTrainerMetrics ? renderTrainerMetrics(trainerMetrics) : ""}
+          <div class="metric-row aux"><span>${metricLabel("exact_match", "Benchmark exact match")}</span><strong>${pct(metrics.exact_match)}</strong></div>
+          <div class="metric-row aux"><span>${metricLabel("execution_accuracy", "Benchmark execution")}</span><strong>${pct(metrics.execution_accuracy)}</strong></div>
+          <div class="metric-row aux"><span>${metricLabel("valid_sql", "Benchmark valid SQL")}</span><strong>${pct(metrics.sql_validity)}</strong></div>
+          <div class="metric-row aux"><span>${metricLabel("latency", "Benchmark latency")}</span><strong>${seconds(metrics.latency_seconds_per_example)}</strong></div>
         </article>
       `;
     })
@@ -146,6 +161,30 @@ async function loadBenchmarks() {
   renderLatencyChart(els.chartLatency, data.models);
   renderBenchmarkDetails(data.benchmark, data.dataset);
   renderRuntime(data.runtime);
+}
+
+function renderTrainerMetrics(metrics) {
+  return `
+    <div class="metric-row"><span>${metricLabel("exact_match", "Training eval exact match")}</span><strong>${pct(metrics.eval_exact_match)}</strong></div>
+    <div class="metric-row"><span>${metricLabel("bleu", "Training eval BLEU")}</span><strong>${pct(metrics.eval_bleu)}</strong></div>
+    <div class="metric-row"><span>${metricLabel("rouge_l", "Training eval ROUGE-L")}</span><strong>${pct(metrics.eval_rouge_l)}</strong></div>
+    <div class="metric-row"><span>${metricLabel("token_f1", "Training eval Token F1")}</span><strong>${pct(metrics.eval_token_f1)}</strong></div>
+    <div class="metric-row aux"><span>${metricLabel("eval_loss", "Training eval loss")}</span><strong>${number(metrics.eval_loss)}</strong></div>
+  `;
+}
+
+function metricLabel(metricKey, label) {
+  const description = METRIC_DEFINITIONS[metricKey];
+  if (!description) return label;
+  return `<span class="metric-help" tabindex="0" data-tooltip="${escapeAttr(description)}">${label}</span>`;
+}
+
+function escapeAttr(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }
 
 function renderChart(target, models, metric, formatter) {
@@ -257,13 +296,19 @@ function renderBenchmarkDetails(benchmark = {}, dataset = {}) {
     ["Framework", benchmark.framework || benchmark.planned_framework],
     ["Dataset", benchmark.dataset || dataset?.name],
     ["Split", benchmark.split || dataset?.split],
-    ["Sample size", formatNullable(sampleSize)],
-    ["Calls/model", formatNullable(callsPerModel)],
-    ["Total calls", formatNullable(totalCalls)],
+    ["Benchmark sample size", formatNullable(sampleSize)],
+    ["Benchmark calls/model", formatNullable(callsPerModel)],
+    ["Benchmark total calls", formatNullable(totalCalls)],
     ["Fine-tuning", fineTuning.technique],
+    ["Training split", fineTuning.train_split],
+    ["Training limit", fineTuning.train_limit === null ? "Full split" : formatNullable(fineTuning.train_limit)],
     ["Training examples", formatNullable(fineTuning.train_examples)],
     ["Training epochs", formatNullable(fineTuning.epochs)],
-    ["Trainer eval EM", trainerMetrics.eval_exact_match !== undefined ? pct(trainerMetrics.eval_exact_match) : null],
+    ["Training eval examples", formatNullable(fineTuning.eval_examples)],
+    [metricLabel("exact_match", "Trainer eval EM"), trainerMetrics.eval_exact_match !== undefined ? pct(trainerMetrics.eval_exact_match) : null],
+    [metricLabel("bleu", "Trainer eval BLEU"), trainerMetrics.eval_bleu !== undefined ? pct(trainerMetrics.eval_bleu) : null],
+    [metricLabel("rouge_l", "Trainer eval ROUGE-L"), trainerMetrics.eval_rouge_l !== undefined ? pct(trainerMetrics.eval_rouge_l) : null],
+    [metricLabel("token_f1", "Trainer eval Token F1"), trainerMetrics.eval_token_f1 !== undefined ? pct(trainerMetrics.eval_token_f1) : null],
     ["Models", formatNullable(benchmark.models_evaluated)],
     ["Sampling", benchmark.sample_strategy],
     ["Seed", formatNullable(benchmark.seed)],
@@ -280,6 +325,11 @@ function renderBenchmarkDetails(benchmark = {}, dataset = {}) {
 function formatNullable(value) {
   if (value === null || value === undefined || value === "") return "n/a";
   return value;
+}
+
+function number(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return "n/a";
+  return Number(value).toFixed(3);
 }
 
 async function loadModels() {

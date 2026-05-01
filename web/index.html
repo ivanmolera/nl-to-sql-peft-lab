@@ -39,15 +39,33 @@
           <section class="metrics-band" id="leaderboard"></section>
           <div class="charts-grid">
             <div class="panel chart-panel">
-              <h3>Execution Accuracy</h3>
+              <h3>
+                <span
+                  class="metric-help"
+                  tabindex="0"
+                  data-tooltip="Percentage of predictions that return the same result as the reference SQL when executed against the WikiSQL table."
+                >Execution Accuracy</span>
+              </h3>
               <div id="chart-exec" class="bar-chart"></div>
             </div>
             <div class="panel chart-panel">
-              <h3>Valid SQL</h3>
+              <h3>
+                <span
+                  class="metric-help"
+                  tabindex="0"
+                  data-tooltip="Percentage of generated outputs that can be parsed and executed as SQL for the example table."
+                >Valid SQL</span>
+              </h3>
               <div id="chart-valid" class="bar-chart"></div>
             </div>
             <div class="panel chart-panel">
-              <h3>Latency per Example</h3>
+              <h3>
+                <span
+                  class="metric-help"
+                  tabindex="0"
+                  data-tooltip="Average model generation time per example, measured in seconds."
+                >Latency per Example</span>
+              </h3>
               <div id="chart-latency" class="bar-chart latency"></div>
             </div>
           </div>
@@ -149,6 +167,6 @@
       </main>
     </div>
 
-    <script src="/static/app.js?v=20260501-live-peft"></script>
+    <script src="/static/app.js?v=20260501-metric-help"></script>
   </body>
 </html>
