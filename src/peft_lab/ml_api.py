@@ -33,6 +33,7 @@ PREFIX_T5_ADAPTER = (
     / "t5-small-wikisql-prefix-tuning"
     / "adapter"
 )
+IA3_T5_ADAPTER = ROOT_DIR / "model_artifacts" / "ia3" / "t5-small-wikisql-ia3" / "adapter"
 
 app = FastAPI(title="NL-to-SQL PEFT Lab ML API", version="0.1.1")
 
@@ -199,10 +200,21 @@ def get_model_specs() -> dict[str, LiveModelSpec]:
             peft_method="prefix-tuning",
             adapter_type="peft",
         )
+    if IA3_T5_ADAPTER.exists():
+        specs["t5-small-ia3"] = LiveModelSpec(
+            id="t5-small-ia3",
+            name="google-t5/t5-small + IA3",
+            architecture="seq2seq",
+            role="T5-small fine-tuned on WikiSQL with IA3",
+            base_model_name="google-t5/t5-small",
+            adapter_path=str(IA3_T5_ADAPTER),
+            peft_method="ia3",
+            adapter_type="peft",
+        )
     return specs
 
 
-@lru_cache(maxsize=7)
+@lru_cache(maxsize=8)
 def get_loaded_model(model_id: str):
     model_spec = get_model_specs()[model_id]
     tokenizer_source = model_spec.adapter_path or model_spec.base_model_name or model_spec.name

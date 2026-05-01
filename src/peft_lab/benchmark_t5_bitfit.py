@@ -11,7 +11,10 @@ from typing import Any
 import torch
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
-from peft_lab.benchmark_t5_qlora import build_benchmark_metadata as build_qlora_metadata
+from peft_lab.benchmark_t5_qlora import (
+    build_benchmark_metadata as build_qlora_metadata,
+    build_fine_tuning_metadata,
+)
 from peft_lab.benchmark_zero_shot import aggregate_metrics, select_preview_records, select_sample_indices
 from peft_lab.data import load_wikisql_split
 from peft_lab.evaluate_zero_shot import ModelSpec, generate_sql, load_config, set_seed
@@ -43,12 +46,18 @@ def main() -> None:
     output_dir = Path(config["output"]["dir"])
     output_dir.mkdir(parents=True, exist_ok=True)
     result = benchmark_adapter(model_spec, examples, config)
+    fine_tuning_metadata = build_fine_tuning_metadata(config)
+    if fine_tuning_metadata:
+        result["training"] = fine_tuning_metadata
     model_path = output_dir / "bitfit_wikisql_t5-small.json"
     model_path.write_text(json.dumps(result, indent=2), encoding="utf-8")
     print(f"Saved BitFit model benchmark to {model_path}")
 
     result_without_records = {key: value for key, value in result.items() if key != "records"}
     result_without_records["result_file"] = str(model_path)
+    benchmark_metadata = build_benchmark_metadata(config, sample_size=len(examples))
+    if fine_tuning_metadata:
+        benchmark_metadata["fine_tuning"] = fine_tuning_metadata
     payload = {
         "experiment": config["experiment"],
         "runtime": collect_runtime_info(),
@@ -60,10 +69,12 @@ def main() -> None:
             "sample_strategy": config["dataset"].get("sample_strategy", "random"),
             "sample_indices": sample_indices,
         },
-        "benchmark": build_benchmark_metadata(config, sample_size=len(examples)),
+        "benchmark": benchmark_metadata,
         "mode": "bitfit",
         "models": [result_without_records],
     }
+    if fine_tuning_metadata:
+        payload["training"] = fine_tuning_metadata
     output_path = Path(config["output"]["index_path"])
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")

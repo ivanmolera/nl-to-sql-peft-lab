@@ -1,0 +1,39 @@
+experiment:
+  name: t5-small-wikisql-bitfit-early-stopping
+  seed: 42
+
+model:
+  name: google-t5/t5-small
+
+dataset:
+  name: Salesforce/wikisql
+  train_split: train
+  eval_split: validation
+  train_limit: null
+  eval_limit: 1024
+
+prompt:
+  max_source_length: 384
+  max_target_length: 128
+
+training:
+  output_dir: outputs/v0.2/t5-small-wikisql-bitfit-early-stopping
+  per_device_train_batch_size: 8
+  per_device_eval_batch_size: 8
+  gradient_accumulation_steps: 2
+  learning_rate: 0.001
+  num_train_epochs: 10
+  logging_steps: 50
+  eval_steps: 500
+  save_steps: 500
+  save_total_limit: 3
+  save_strategy: steps
+  predict_with_generate: true
+  generation_max_length: 128
+  load_best_model_at_end: true
+  metric_for_best_model: eval_loss
+  greater_is_better: false
+  early_stopping:
+    enabled: true
+    patience: 3
+    threshold: 0.0

@@ -22,6 +22,13 @@ from transformers import (
 
 from peft_lab.data import load_wikisql_split, prepare_seq2seq_dataset
 from peft_lab.metrics import bleu_score, exact_match_score, rouge_l_score, token_f1_score
+from peft_lab.training_utils import (
+    add_best_model_metadata,
+    add_training_run_metadata,
+    best_model_training_args,
+    build_early_stopping_callbacks,
+    ResourceMonitor,
+)
 
 
 def main() -> None:
@@ -74,10 +81,15 @@ def main() -> None:
         ),
         tokenizer=tokenizer,
         compute_metrics=build_compute_metrics(tokenizer),
+        callbacks=build_early_stopping_callbacks(config),
     )
 
-    trainer.train()
-    metrics = trainer.evaluate()
+    resource_monitor = ResourceMonitor()
+    resource_monitor.start()
+    train_result = trainer.train()
+    resource_metrics = resource_monitor.stop()
+    metrics = add_best_model_metadata(trainer.evaluate(), trainer)
+    metrics = add_training_run_metadata(metrics, train_result.metrics, resource_metrics)
     trainer.save_model(output_dir / "adapter")
     tokenizer.save_pretrained(output_dir / "adapter")
     save_json(output_dir / "eval_metrics.json", metrics)
@@ -103,8 +115,8 @@ def build_training_args(config: dict[str, Any]) -> Seq2SeqTrainingArguments:
         num_train_epochs=training["num_train_epochs"],
         logging_steps=training["logging_steps"],
         eval_steps=training["eval_steps"],
-        save_steps=training["save_steps"],
-        save_total_limit=training["save_total_limit"],
+        save_steps=training.get("save_steps", training["eval_steps"]),
+        save_total_limit=training.get("save_total_limit", 2),
         eval_strategy="steps",
         save_strategy="steps",
         predict_with_generate=training["predict_with_generate"],
@@ -112,6 +124,7 @@ def build_training_args(config: dict[str, Any]) -> Seq2SeqTrainingArguments:
         report_to="none",
         fp16=torch.cuda.is_available() and not torch.cuda.is_bf16_supported(),
         bf16=torch.cuda.is_available() and torch.cuda.is_bf16_supported(),
+        **best_model_training_args(training),
     )
 
 

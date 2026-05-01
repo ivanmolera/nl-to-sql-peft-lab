@@ -51,12 +51,18 @@ def main() -> None:
     output_dir = Path(config["output"]["dir"])
     output_dir.mkdir(parents=True, exist_ok=True)
     result = benchmark_adapter(model_spec, examples, config)
+    fine_tuning_metadata = build_fine_tuning_metadata(config)
+    if fine_tuning_metadata:
+        result["training"] = fine_tuning_metadata
     model_path = output_dir / "qlora_wikisql_t5-small.json"
     model_path.write_text(json.dumps(result, indent=2), encoding="utf-8")
     print(f"Saved QLoRA model benchmark to {model_path}")
 
     result_without_records = {key: value for key, value in result.items() if key != "records"}
     result_without_records["result_file"] = str(model_path)
+    benchmark_metadata = build_benchmark_metadata(config, sample_size=len(examples))
+    if fine_tuning_metadata:
+        benchmark_metadata["fine_tuning"] = fine_tuning_metadata
     payload = {
         "experiment": config["experiment"],
         "runtime": collect_runtime_info(),
@@ -68,10 +74,12 @@ def main() -> None:
             "sample_strategy": config["dataset"].get("sample_strategy", "random"),
             "sample_indices": sample_indices,
         },
-        "benchmark": build_benchmark_metadata(config, sample_size=len(examples)),
+        "benchmark": benchmark_metadata,
         "mode": "qlora",
         "models": [result_without_records],
     }
+    if fine_tuning_metadata:
+        payload["training"] = fine_tuning_metadata
     output_path = Path(config["output"]["index_path"])
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -221,6 +229,24 @@ def build_benchmark_metadata(config: dict[str, Any], sample_size: int) -> dict[s
             "Execution match compares generated SQL results against reference SQL results.",
         ],
     }
+
+
+def build_fine_tuning_metadata(config: dict[str, Any]) -> dict[str, Any] | None:
+    fine_tuning = config.get("fine_tuning")
+    if not fine_tuning:
+        return None
+
+    metadata = {
+        key: value
+        for key, value in fine_tuning.items()
+        if key != "eval_metrics_path"
+    }
+    eval_metrics_path = fine_tuning.get("eval_metrics_path")
+    if eval_metrics_path and Path(eval_metrics_path).exists():
+        metadata["trainer_eval_metrics"] = json.loads(
+            Path(eval_metrics_path).read_text(encoding="utf-8")
+        )
+    return metadata
 
 
 def parse_args() -> argparse.Namespace:

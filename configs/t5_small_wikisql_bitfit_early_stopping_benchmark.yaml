@@ -1,0 +1,47 @@
+experiment:
+  name: t5-small-wikisql-bitfit-early-stopping-benchmark
+  seed: 42
+
+model:
+  id: t5-small-bitfit-v0-2
+  name: google-t5/t5-small
+  architecture: seq2seq
+  role: T5-small fine-tuned with BitFit and early stopping
+  adapter_path: outputs/v0.2/t5-small-wikisql-bitfit-early-stopping/adapter
+
+dataset:
+  name: Salesforce/wikisql
+  split: validation
+  sample_size: 1000
+  sample_strategy: random
+
+prompt:
+  max_source_length: 384
+  max_new_tokens: 96
+
+generation:
+  do_sample: false
+  temperature: 0.0
+
+fine_tuning:
+  technique: BitFit
+  base_model: google-t5/t5-small
+  dataset: Salesforce/wikisql
+  train_split: train
+  eval_split: validation
+  train_examples: 56355
+  eval_examples: 1024
+  epochs: 10
+  train_limit: null
+  selection_metric: eval_loss
+  early_stopping_patience: 3
+  adapter: Bias-only tuning; all non-bias parameters frozen
+  quantization: None
+  eval_metrics_path: outputs/v0.2/t5-small-wikisql-bitfit-early-stopping/eval_metrics.json
+
+reporting:
+  preview_limit: 20
+
+output:
+  dir: benchmark_results/v0_2/bitfit
+  index_path: benchmark_results/v0_2/bitfit/bitfit_wikisql_index.json
