@@ -1,0 +1,52 @@
+experiment:
+  name: qwen2-5-wikisql-bitfit-early-stopping-benchmark
+  seed: 42
+
+model:
+  id: qwen2-5-bitfit-v0-2
+  name: Qwen/Qwen2.5-Coder-0.5B-Instruct
+  architecture: causal
+  role: Qwen2.5-Coder-0.5B fine-tuned with BitFit and early stopping
+  adapter_path: outputs/v0.2/qwen2-5-wikisql-bitfit-early-stopping/adapter
+
+peft:
+  method: bitfit
+  label: BitFit
+
+dataset:
+  name: Salesforce/wikisql
+  split: validation
+  sample_size: 1000
+  sample_strategy: random
+
+prompt:
+  max_source_length: 384
+  max_new_tokens: 96
+
+generation:
+  do_sample: false
+  temperature: 0.0
+
+fine_tuning:
+  technique: BitFit
+  base_model: Qwen/Qwen2.5-Coder-0.5B-Instruct
+  dataset: Salesforce/wikisql
+  train_split: train
+  eval_split: validation
+  train_examples: 56355
+  eval_examples: 1024
+  epochs: 10
+  train_limit: null
+  selection_metric: eval_loss
+  early_stopping_patience: 3
+  adapter: Bias-only fine-tuning
+  quantization: None
+  eval_metrics_path: outputs/v0.2/qwen2-5-wikisql-bitfit-early-stopping/eval_metrics.json
+
+reporting:
+  preview_limit: 20
+
+output:
+  dir: benchmark_results/v0_2/bitfit
+  model_file: bitfit_wikisql_qwen2-5-coder-0-5b-instruct.json
+  index_path: benchmark_results/v0_2/bitfit/bitfit_wikisql_index.json

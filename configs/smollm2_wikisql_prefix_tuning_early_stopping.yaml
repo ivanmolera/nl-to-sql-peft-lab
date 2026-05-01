@@ -1,0 +1,44 @@
+experiment:
+  name: smollm2-wikisql-prefix-tuning-early-stopping
+  seed: 42
+
+model:
+  name: HuggingFaceTB/SmolLM2-135M-Instruct
+
+dataset:
+  name: Salesforce/wikisql
+  train_split: train
+  eval_split: validation
+  train_limit: null
+  eval_limit: 1024
+
+prompt:
+  max_source_length: 384
+  max_target_length: 128
+
+peft:
+  method: prefix-tuning
+
+prefix_tuning:
+  num_virtual_tokens: 20
+  prefix_projection: true
+
+training:
+  output_dir: outputs/v0.2/smollm2-wikisql-prefix-tuning-early-stopping
+  per_device_train_batch_size: 2
+  per_device_eval_batch_size: 2
+  gradient_accumulation_steps: 8
+  learning_rate: 0.0005
+  num_train_epochs: 10
+  logging_steps: 50
+  eval_steps: 500
+  save_steps: 500
+  save_total_limit: 3
+  gradient_checkpointing: true
+  load_best_model_at_end: false
+  metric_for_best_model: eval_loss
+  greater_is_better: false
+  early_stopping:
+    enabled: true
+    patience: 3
+    threshold: 0.0

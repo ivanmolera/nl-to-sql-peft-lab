@@ -1,0 +1,273 @@
+"""Benchmark decoder-only PEFT adapters on WikiSQL."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import time
+from pathlib import Path
+from typing import Any
+
+import torch
+from peft import PeftModel
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+
+from peft_lab.benchmark_zero_shot import (
+    aggregate_metrics,
+    select_preview_records,
+    select_sample_indices,
+)
+from peft_lab.data import load_wikisql_split
+from peft_lab.evaluate_zero_shot import ModelSpec, generate_sql, load_config, set_seed
+from peft_lab.execution import execution_match, is_valid_sql
+from peft_lab.runtime_info import collect_runtime_info
+from peft_lab.sql import normalize_sql, render_wikisql_query
+
+
+def main() -> None:
+    args = parse_args()
+    config = load_config(args.config)
+    set_seed(config["experiment"]["seed"])
+
+    dataset = load_wikisql_split(config["dataset"]["name"], config["dataset"]["split"], limit=None)
+    sample_indices = select_sample_indices(
+        dataset_size=len(dataset),
+        sample_size=args.max_examples or config["dataset"]["sample_size"],
+        strategy=config["dataset"].get("sample_strategy", "random"),
+        seed=config["experiment"]["seed"],
+    )
+    examples = [(index, dataset[index]) for index in sample_indices]
+    model_spec = ModelSpec(
+        id=config["model"]["id"],
+        name=config["model"]["name"],
+        architecture=config["model"]["architecture"],
+        role=config["model"]["role"],
+    )
+
+    output_dir = Path(config["output"]["dir"])
+    output_dir.mkdir(parents=True, exist_ok=True)
+    result = benchmark_adapter(model_spec, examples, config)
+    fine_tuning_metadata = build_fine_tuning_metadata(config)
+    if fine_tuning_metadata:
+        result["training"] = fine_tuning_metadata
+
+    model_path = output_dir / config["output"]["model_file"]
+    model_path.write_text(json.dumps(result, indent=2), encoding="utf-8")
+    print(f"Saved causal PEFT model benchmark to {model_path}")
+
+    result_without_records = {key: value for key, value in result.items() if key != "records"}
+    result_without_records["result_file"] = str(model_path)
+    benchmark_metadata = build_benchmark_metadata(config, sample_size=len(examples))
+    if fine_tuning_metadata:
+        benchmark_metadata["fine_tuning"] = fine_tuning_metadata
+    payload = {
+        "experiment": config["experiment"],
+        "runtime": collect_runtime_info(),
+        "dataset": {
+            "name": config["dataset"]["name"],
+            "split": config["dataset"]["split"],
+            "total_examples": len(dataset),
+            "sample_size": len(examples),
+            "sample_strategy": config["dataset"].get("sample_strategy", "random"),
+            "sample_indices": sample_indices,
+        },
+        "benchmark": benchmark_metadata,
+        "mode": config["peft"]["method"],
+        "models": [result_without_records],
+    }
+    if fine_tuning_metadata:
+        payload["training"] = fine_tuning_metadata
+    output_path = Path(config["output"]["index_path"])
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    print(f"Saved causal PEFT benchmark index to {output_path}")
+
+
+def benchmark_adapter(
+    model_spec: ModelSpec,
+    examples: list[tuple[int, dict[str, Any]]],
+    config: dict[str, Any],
+) -> dict[str, Any]:
+    print(f"Benchmarking {model_spec.name} {config['peft']['label']} adapter on {len(examples)} WikiSQL examples")
+    load_started_at = time.perf_counter()
+    tokenizer = AutoTokenizer.from_pretrained(config["model"]["adapter_path"], trust_remote_code=True)
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.padding_side = "left"
+    model = load_adapter_model(config)
+    model.eval()
+    load_time = time.perf_counter() - load_started_at
+
+    records: list[dict[str, Any]] = []
+    predictions: list[str] = []
+    references: list[str] = []
+    generation_latencies: list[float] = []
+    evaluation_latencies: list[float] = []
+    total_started_at = time.perf_counter()
+
+    for position, (example_index, example) in enumerate(examples, start=1):
+        print(f"[{model_spec.id}] {position}/{len(examples)} example={example_index}")
+        reference_sql = render_wikisql_query(example)
+        generation_started_at = time.perf_counter()
+        error: str | None = None
+        try:
+            prediction = generate_sql(model, tokenizer, model_spec, example, config)
+        except Exception as exc:  # pragma: no cover - model/runtime dependent
+            prediction = ""
+            error = str(exc)
+        generation_latency = time.perf_counter() - generation_started_at
+
+        evaluation_started_at = time.perf_counter()
+        exact_match = normalize_sql(prediction) == normalize_sql(reference_sql)
+        valid_sql = False if error else is_valid_sql(prediction, example)
+        execution_ok = False if error else execution_match(prediction, reference_sql, example)
+        evaluation_latency = time.perf_counter() - evaluation_started_at
+
+        predictions.append(prediction)
+        references.append(reference_sql)
+        generation_latencies.append(generation_latency)
+        evaluation_latencies.append(evaluation_latency)
+        records.append(
+            {
+                "example_index": example_index,
+                "question": example["question"],
+                "prediction": prediction,
+                "reference": reference_sql,
+                "exact_match": exact_match,
+                "valid_sql": valid_sql,
+                "execution_match": execution_ok,
+                "generation_latency_seconds": generation_latency,
+                "evaluation_latency_seconds": evaluation_latency,
+                "output_characters": len(prediction),
+                "error": error,
+            }
+        )
+
+    total_time = time.perf_counter() - total_started_at
+    preview_limit = config.get("reporting", {}).get("preview_limit", 20)
+    return {
+        "id": model_spec.id,
+        "name": f"{model_spec.name} + {config['peft']['label']}",
+        "architecture": model_spec.architecture,
+        "role": model_spec.role,
+        "runtime": collect_runtime_info(),
+        "metrics": aggregate_metrics(
+            records=records,
+            predictions=predictions,
+            references=references,
+            generation_latencies=generation_latencies,
+            evaluation_latencies=evaluation_latencies,
+            load_time=load_time,
+            total_time=total_time,
+        ),
+        "examples": select_preview_records(records, preview_limit),
+        "records": records,
+    }
+
+
+def load_adapter_model(config: dict[str, Any]):
+    if not torch.cuda.is_available():
+        raise RuntimeError("Causal PEFT adapter benchmarking requires CUDA.")
+
+    method = config["peft"]["method"]
+    base_name = config["model"]["name"]
+    if method == "qlora":
+        quantization_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_use_double_quant=True,
+            bnb_4bit_compute_dtype=torch.bfloat16
+            if torch.cuda.is_bf16_supported()
+            else torch.float16,
+        )
+        base_model = AutoModelForCausalLM.from_pretrained(
+            base_name,
+            quantization_config=quantization_config,
+            device_map="auto",
+            trust_remote_code=True,
+        )
+    else:
+        base_model = AutoModelForCausalLM.from_pretrained(
+            base_name,
+            torch_dtype=torch.float16,
+            trust_remote_code=True,
+        ).to("cuda")
+
+    if method == "bitfit":
+        return load_bitfit_adapter(base_model, Path(config["model"]["adapter_path"]))
+    return PeftModel.from_pretrained(base_model, config["model"]["adapter_path"])
+
+
+def load_bitfit_adapter(model, adapter_path: Path):
+    device = next(model.parameters()).device
+    bias_state = torch.load(adapter_path / "bitfit_biases.pt", map_location=device)
+    model_state = dict(model.named_parameters())
+    missing = []
+    for name, tensor in bias_state.items():
+        parameter = model_state.get(name)
+        if parameter is None:
+            missing.append(name)
+            continue
+        parameter.data.copy_(tensor.to(device=device, dtype=parameter.dtype))
+    if missing:
+        raise RuntimeError(f"BitFit adapter contains missing parameters: {missing[:5]}")
+    return model
+
+
+def build_benchmark_metadata(config: dict[str, Any], sample_size: int) -> dict[str, Any]:
+    return {
+        "task": "NL-to-SQL",
+        "mode": config["peft"]["method"],
+        "runner": "peft_lab.benchmark_causal_peft",
+        "planned_framework": "Hugging Face LightEval custom task",
+        "dataset": config["dataset"]["name"],
+        "split": config["dataset"]["split"],
+        "sample_size": sample_size,
+        "calls_per_model": sample_size,
+        "models_evaluated": 1,
+        "total_model_calls": sample_size,
+        "sample_strategy": config["dataset"].get("sample_strategy", "random"),
+        "seed": config["experiment"]["seed"],
+        "max_source_length": config["prompt"].get("max_source_length"),
+        "max_new_tokens": config["prompt"].get("max_new_tokens"),
+        "generation": config.get("generation", {}),
+        "metrics": [
+            "exact_match",
+            "bleu",
+            "rouge_l",
+            "token_f1",
+            "sql_validity",
+            "execution_accuracy",
+            "latency_seconds_per_example",
+            "generation_latency_p50",
+            "generation_latency_p95",
+            "throughput_examples_per_second",
+        ],
+        "evaluation_notes": [
+            "Exact match compares normalized SQL against the WikiSQL reference.",
+            "Valid SQL checks whether the generated query can run against the example table.",
+            "Execution match compares generated SQL results against reference SQL results.",
+        ],
+    }
+
+
+def build_fine_tuning_metadata(config: dict[str, Any]) -> dict[str, Any] | None:
+    fine_tuning = config.get("fine_tuning")
+    if not fine_tuning:
+        return None
+    metadata = {key: value for key, value in fine_tuning.items() if key != "eval_metrics_path"}
+    eval_metrics_path = fine_tuning.get("eval_metrics_path")
+    if eval_metrics_path and Path(eval_metrics_path).exists():
+        metadata["trainer_eval_metrics"] = json.loads(Path(eval_metrics_path).read_text(encoding="utf-8"))
+    return metadata
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", required=True, help="Path to causal PEFT benchmark YAML.")
+    parser.add_argument("--max-examples", type=int, default=None, help="Override configured sample size.")
+    return parser.parse_args()
+
+
+if __name__ == "__main__":
+    main()

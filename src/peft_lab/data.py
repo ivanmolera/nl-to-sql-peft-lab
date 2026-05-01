@@ -63,6 +63,79 @@ def prepare_seq2seq_dataset(
     return dataset.map(tokenize_batch, batched=True)
 
 
+def prepare_causal_completion_dataset(
+    dataset: Dataset,
+    tokenizer: PreTrainedTokenizerBase,
+    max_source_length: int,
+    max_target_length: int,
+) -> Dataset:
+    def tokenize_batch(batch: dict[str, list[Any]]) -> dict[str, Any]:
+        input_ids = []
+        attention_mask = []
+        labels = []
+        targets = []
+
+        eos_token_id = tokenizer.eos_token_id
+        for index in range(len(batch["question"])):
+            row = _row_from_batch(batch, index)
+            prompt = format_causal_prompt(tokenizer, build_prompt(row))
+            target = render_wikisql_query(row)
+            prompt_ids = tokenizer(
+                prompt,
+                add_special_tokens=True,
+                max_length=max_source_length,
+                truncation=True,
+            )["input_ids"]
+            target_ids = tokenizer(
+                f" {target}",
+                add_special_tokens=False,
+                max_length=max_target_length,
+                truncation=True,
+            )["input_ids"]
+            if eos_token_id is not None:
+                target_ids = target_ids + [eos_token_id]
+
+            ids = prompt_ids + target_ids
+            input_ids.append(ids)
+            attention_mask.append([1] * len(ids))
+            labels.append([-100] * len(prompt_ids) + target_ids)
+            targets.append(target)
+
+        return {
+            "input_ids": input_ids,
+            "attention_mask": attention_mask,
+            "labels": labels,
+            "target_sql": targets,
+        }
+
+    return dataset.map(
+        tokenize_batch,
+        batched=True,
+        remove_columns=dataset.column_names,
+    )
+
+
+def format_causal_prompt(tokenizer: PreTrainedTokenizerBase, prompt: str) -> str:
+    messages = [
+        {
+            "role": "system",
+            "content": "You generate one SQLite SQL query and no explanation.",
+        },
+        {"role": "user", "content": prompt},
+    ]
+    if getattr(tokenizer, "chat_template", None):
+        return tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True,
+        )
+    return (
+        "System: You generate one SQLite SQL query and no explanation.\n"
+        f"User: {prompt}\n"
+        "Assistant:"
+    )
+
+
 def _format_columns(table: dict[str, Any]) -> str:
     headers = table["header"]
     types = table.get("types") or ["text"] * len(headers)

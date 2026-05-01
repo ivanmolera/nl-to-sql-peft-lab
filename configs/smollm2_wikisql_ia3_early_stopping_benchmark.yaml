@@ -1,0 +1,52 @@
+experiment:
+  name: smollm2-wikisql-ia3-early-stopping-benchmark
+  seed: 42
+
+model:
+  id: smollm2-ia3-v0-2
+  name: HuggingFaceTB/SmolLM2-135M-Instruct
+  architecture: causal
+  role: SmolLM2-135M fine-tuned with IA3 and early stopping
+  adapter_path: outputs/v0.2/smollm2-wikisql-ia3-early-stopping/adapter
+
+peft:
+  method: ia3
+  label: IA3
+
+dataset:
+  name: Salesforce/wikisql
+  split: validation
+  sample_size: 1000
+  sample_strategy: random
+
+prompt:
+  max_source_length: 384
+  max_new_tokens: 96
+
+generation:
+  do_sample: false
+  temperature: 0.0
+
+fine_tuning:
+  technique: IA3
+  base_model: HuggingFaceTB/SmolLM2-135M-Instruct
+  dataset: Salesforce/wikisql
+  train_split: train
+  eval_split: validation
+  train_examples: 56355
+  eval_examples: 1024
+  epochs: 10
+  train_limit: null
+  selection_metric: eval_loss
+  early_stopping_patience: 3
+  adapter: IA3 scaling on attention and feed-forward projections
+  quantization: None
+  eval_metrics_path: outputs/v0.2/smollm2-wikisql-ia3-early-stopping/eval_metrics.json
+
+reporting:
+  preview_limit: 20
+
+output:
+  dir: benchmark_results/v0_2/ia3
+  model_file: ia3_wikisql_smollm2-135m-instruct.json
+  index_path: benchmark_results/v0_2/ia3/ia3_wikisql_index.json

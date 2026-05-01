@@ -1,0 +1,52 @@
+experiment:
+  name: qwen2-5-wikisql-qlora-early-stopping-benchmark
+  seed: 42
+
+model:
+  id: qwen2-5-qlora-v0-2
+  name: Qwen/Qwen2.5-Coder-0.5B-Instruct
+  architecture: causal
+  role: Qwen2.5-Coder-0.5B fine-tuned with QLoRA and early stopping
+  adapter_path: outputs/v0.2/qwen2-5-wikisql-qlora-early-stopping/adapter
+
+peft:
+  method: qlora
+  label: QLoRA
+
+dataset:
+  name: Salesforce/wikisql
+  split: validation
+  sample_size: 1000
+  sample_strategy: random
+
+prompt:
+  max_source_length: 384
+  max_new_tokens: 96
+
+generation:
+  do_sample: false
+  temperature: 0.0
+
+fine_tuning:
+  technique: QLoRA
+  base_model: Qwen/Qwen2.5-Coder-0.5B-Instruct
+  dataset: Salesforce/wikisql
+  train_split: train
+  eval_split: validation
+  train_examples: 56355
+  eval_examples: 1024
+  epochs: 10
+  train_limit: null
+  selection_metric: eval_loss
+  early_stopping_patience: 3
+  adapter: LoRA r=16 alpha=32 dropout=0.05 on q/v projections
+  quantization: 4-bit NF4 with double quantization
+  eval_metrics_path: outputs/v0.2/qwen2-5-wikisql-qlora-early-stopping/eval_metrics.json
+
+reporting:
+  preview_limit: 20
+
+output:
+  dir: benchmark_results/v0_2/qlora
+  model_file: qlora_wikisql_qwen2-5-coder-0-5b-instruct.json
+  index_path: benchmark_results/v0_2/qlora/qlora_wikisql_index.json
