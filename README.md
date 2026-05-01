@@ -9,11 +9,11 @@ WikiSQL text-to-SQL task. It combines training pipelines, benchmark scripts, sto
 evaluation artifacts, and a web dashboard where users can compare results and test
 trained variants on real WikiSQL examples.
 
-The project currently focuses on `google-t5/t5-small` for PEFT experiments, with
-zero-shot baselines for `google-t5/t5-small`, `HuggingFaceTB/SmolLM2-135M-Instruct`,
-and `Qwen/Qwen2.5-Coder-0.5B-Instruct`. The benchmark dataset is
-`Salesforce/wikisql`, and the PEFT comparison covers QLoRA, BitFit, Prefix Tuning,
-and IA3.
+The model suite includes `google-t5/t5-small`, `HuggingFaceTB/SmolLM2-135M-Instruct`,
+and `Qwen/Qwen2.5-Coder-0.5B-Instruct`. `google-t5/t5-small` is the first model with
+completed PEFT runs, while the lab is designed to extend the same evaluation flow to
+the full selected model set. The benchmark dataset is `Salesforce/wikisql`, and the
+PEFT comparison covers QLoRA, BitFit, Prefix Tuning, and IA3.
 
 The web app is designed as both an analysis dashboard and an interactive playground:
 it displays benchmark metrics such as exact match, SQL validity, execution accuracy,
