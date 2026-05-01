@@ -42,7 +42,7 @@ const METRIC_DEFINITIONS = {
   bleu: "N-gram overlap between generated SQL and reference SQL. Useful as an auxiliary similarity metric, not as proof of semantic correctness.",
   rouge_l: "Longest-common-subsequence overlap between generated SQL and reference SQL. Useful as an auxiliary sequence similarity metric.",
   token_f1: "Token-level precision and recall combined into an F1 score between the generated SQL and the reference SQL.",
-  latency: "Average model generation time per example, measured in seconds.",
+  latency: "Average model generation time per example, displayed in milliseconds for benchmark runs.",
   eval_loss: "Validation loss reported by the trainer during the post-training evaluation pass.",
   best_epoch: "Training epoch where the best validation loss was observed. Fractional epochs are expected: 2.41 means slightly more than two full passes over the training split.",
   best_step: "Optimizer step of the selected checkpoint with the best validation loss.",
@@ -74,6 +74,10 @@ function pct(value) {
 
 function seconds(value) {
   return `${Number(value || 0).toFixed(2)}s`;
+}
+
+function milliseconds(value) {
+  return `${Math.round(Number(value || 0) * 1000)} ms`;
 }
 
 function shortName(name) {
@@ -164,7 +168,7 @@ async function loadBenchmarks() {
           <div class="metric-row aux"><span>${metricLabel("exact_match", "Benchmark exact match")}</span><strong>${pct(metrics.exact_match)}</strong></div>
           <div class="metric-row aux"><span>${metricLabel("execution_accuracy", "Benchmark execution")}</span><strong>${pct(metrics.execution_accuracy)}</strong></div>
           <div class="metric-row aux"><span>${metricLabel("valid_sql", "Benchmark valid SQL")}</span><strong>${pct(metrics.sql_validity)}</strong></div>
-          <div class="metric-row aux"><span>${metricLabel("latency", "Benchmark latency")}</span><strong>${seconds(metrics.latency_seconds_per_example)}</strong></div>
+          <div class="metric-row aux"><span>${metricLabel("latency", "Benchmark latency")}</span><strong>${milliseconds(metrics.latency_seconds_per_example)}</strong></div>
           ${hasTrainerMetrics ? renderTrainingResources(trainerMetrics) : ""}
         </article>
       `;
@@ -260,7 +264,7 @@ function renderLatencyChart(target, models) {
         <div class="bar-row">
           <div class="bar-label" title="${model.name}">${shortName(model.name)}</div>
           <div class="bar-track"><div class="bar-fill" style="width:${width}%"></div></div>
-          <strong>${seconds(value)}</strong>
+          <strong>${milliseconds(value)}</strong>
         </div>
       `;
     })

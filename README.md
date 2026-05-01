@@ -71,16 +71,28 @@ python scripts/download_hf_assets.py --config configs/hf_assets.yaml --only mode
 python scripts/download_hf_assets.py --config configs/hf_assets.yaml --only datasets
 ```
 
-## Separated Service Images
+## Docker Images
 
-For Google Cloud, the project uses three deployable images:
+The project intentionally separates the heavy ML runtime from the lightweight web
+dashboard. This keeps normal UI iterations fast and avoids rebuilding or redownloading
+model assets when only benchmark presentation, copy, or frontend behavior changes.
 
-- A heavy ML/runtime base image with CUDA, Python ML dependencies, WikiSQL, and Hugging
-  Face models cached under `/opt/hf-cache`.
-- A ML API image that inherits from the runtime image and serves live playground
-  inference through `peft_lab.ml_api`.
-- A lightweight web app image based on `python:slim` that serves the dashboard, static
-  UI, benchmark JSON files, and proxies playground calls to the ML API.
+The active Google Cloud images are:
+
+| Image | Dockerfile | Purpose | Rebuild when |
+| --- | --- | --- | --- |
+| `europe-west1-docker.pkg.dev/nl-sql-peft-lab-ivan-0429/nl-to-sql-peft-lab/runtime:latest` | `Dockerfile.runtime` | Heavy CUDA/Python ML base image. It installs the ML stack and caches the selected Hugging Face models and WikiSQL dataset under `/opt/hf-cache`. | CUDA/Python base, ML dependencies, selected model list, dataset cache logic, or Hugging Face asset preload changes. |
+| `europe-west1-docker.pkg.dev/nl-sql-peft-lab-ivan-0429/nl-to-sql-peft-lab/train:latest` | `Dockerfile.train` | Vertex AI training image. It inherits from the runtime image and adds this repository's training scripts, benchmark runners, configs, and GCS artifact upload helper. | Training code, benchmark code, experiment configs, or pipeline wrapper scripts change. |
+| `europe-west1-docker.pkg.dev/nl-sql-peft-lab-ivan-0429/nl-to-sql-peft-lab/ml-api:latest` | `Dockerfile.ml-api` | Cloud Run inference service for the WikiSQL playground. It inherits from the runtime image and loads base models plus available PEFT adapters through `peft_lab.ml_api`. | Live inference code, prompt generation, model loading, adapter loading, or packaged adapter artifacts change. |
+| `europe-west1-docker.pkg.dev/nl-sql-peft-lab-ivan-0429/nl-to-sql-peft-lab/app:latest` | `Dockerfile.app` | Lightweight Cloud Run web app. It serves the dashboard, static UI, benchmark JSON files, runtime metadata, and proxy endpoints that call the ML API. | Frontend code, dashboard formatting, benchmark JSON files, web API proxy behavior, or README/package metadata used by the web image changes. |
+
+There is also a legacy monolithic image:
+
+| Image | Dockerfile | Status |
+| --- | --- | --- |
+| `europe-west1-docker.pkg.dev/nl-sql-peft-lab-ivan-0429/nl-to-sql-peft-lab/ml:latest` | `Dockerfile.ml` | Kept for compatibility only. It combines dependencies, cached assets, code, web files, and benchmark results in one image, so it is no longer the recommended deployment path. |
+
+### Build Commands
 
 Rebuild the runtime image only when dependencies, selected models, dataset cache logic,
 or the CUDA/Python base image change:
@@ -88,6 +100,15 @@ or the CUDA/Python base image change:
 ```bash
 gcloud builds submit \
   --config=cloudbuild.runtime.yaml \
+  --project=nl-sql-peft-lab-ivan-0429
+```
+
+Rebuild the training image when training code, benchmark runners, configs, or Vertex AI
+pipeline wrappers change:
+
+```bash
+gcloud builds submit \
+  --config=cloudbuild.train.yaml \
   --project=nl-sql-peft-lab-ivan-0429
 ```
 
@@ -108,6 +129,8 @@ gcloud builds submit \
   --config=cloudbuild.app.yaml \
   --project=nl-sql-peft-lab-ivan-0429
 ```
+
+### Cloud Run Services
 
 Deploy the ML API image to Cloud Run:
 
@@ -148,6 +171,8 @@ The web app service does not load Hugging Face models. Its `/api/examples` and
 `/api/generate` routes proxy to the ML API service so the browser can keep using same
 origin API paths.
 
+### Local Docker Testing
+
 For local testing, build the runtime once, then build the ML API and web app images:
 
 ```bash
@@ -177,11 +202,6 @@ The runtime image uses:
 - `HF_HOME=/opt/hf-cache`
 - `TRANSFORMERS_CACHE=/opt/hf-cache/hub`
 - `HF_DATASETS_CACHE=/opt/hf-cache/datasets`
-
-The legacy `Dockerfile.ml` and `cloudbuild.ml.yaml` still build a monolithic image with
-dependencies, assets, code, web files, and benchmark results in one layer stack. They are
-kept for compatibility, but the recommended deployment path is now
-`Dockerfile.runtime`, `Dockerfile.ml-api`, and `Dockerfile.app`.
 
 This split avoids downloading model weights or regenerating the dataset cache every time
 the dashboard layout changes, and it also keeps normal UI deployments independent from
