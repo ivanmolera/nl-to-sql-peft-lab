@@ -201,6 +201,8 @@ function renderRuntime(runtime = {}) {
     ["Python", runtime.python_version],
     ["PyTorch", runtime.torch_version],
     ["CUDA", runtime.cuda_available ? `Yes (${runtime.cuda_version || "n/a"})` : "No"],
+    ["GPU count", formatGpuCount(runtime)],
+    ["GPU type", runtime.accelerator_type || runtime.device],
     ["GPU", formatGpu(runtime)],
     ["Device", runtime.device],
     ["CPU", runtime.cpu_count],
@@ -212,10 +214,14 @@ function renderRuntime(runtime = {}) {
     .join("");
 }
 
-function formatGpu(runtime = {}) {
-  const count = runtime.accelerator_count
+function formatGpuCount(runtime = {}) {
+  return runtime.accelerator_count
     ?? runtime.cuda_device_count
     ?? (runtime.cuda_available ? 1 : 0);
+}
+
+function formatGpu(runtime = {}) {
+  const count = formatGpuCount(runtime);
   if (!count) return "0";
   const type = runtime.accelerator_type || runtime.device || "GPU";
   return `${count} x ${type}`;
