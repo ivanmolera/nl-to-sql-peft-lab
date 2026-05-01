@@ -44,10 +44,11 @@ const METRIC_DEFINITIONS = {
   token_f1: "Token-level precision and recall combined into an F1 score between the generated SQL and the reference SQL.",
   latency: "Average model generation time per example, measured in seconds.",
   eval_loss: "Validation loss reported by the trainer during the post-training evaluation pass.",
-  best_epoch: "Training epoch where the best validation loss was observed. This is the selected checkpoint point, not a proof of absolute convergence.",
+  best_epoch: "Training epoch where the best validation loss was observed. Fractional epochs are expected: 2.41 means slightly more than two full passes over the training split.",
   best_step: "Optimizer step of the selected checkpoint with the best validation loss.",
   best_metric: "Best validation loss used to select the final checkpoint. Lower is better.",
-  training_time: "Total wall-clock time spent by the fine-tuning job, measured from trainer start to trainer end.",
+  training_time: "External wall-clock measurement around the training loop, collected by the project resource monitor. It is used together with CPU, GPU, and RAM sampling.",
+  trainer_runtime: "Internal Hugging Face Trainer train_runtime metric for trainer.train(). It should be close to wall time, but comes from the Trainer logs rather than the external resource monitor.",
   train_steps_per_second: "Training throughput reported by Hugging Face Trainer as optimizer steps completed per second. This is speed, not total steps.",
   cpu_utilization: "Estimated process CPU utilization during fine-tuning, normalized by available CPU cores.",
   gpu_utilization: "Mean and peak GPU utilization sampled with nvidia-smi during fine-tuning.",
@@ -196,11 +197,11 @@ function renderTrainingResources(metrics) {
   return `
     <div class="resource-block">
       <h4>Training Runtime & Resources</h4>
-      <div class="metric-row resource"><span>${metricLabel("best_epoch", "Best eval-loss epoch")}</span><strong>${number(metrics.epoch)}</strong></div>
+      <div class="metric-row resource"><span>${metricLabel("best_epoch", "Best eval-loss epoch")}</span><strong>${epochValue(metrics.epoch)}</strong></div>
       <div class="metric-row resource"><span>${metricLabel("best_step", "Best eval-loss step")}</span><strong>${integer(stepFromCheckpoint(metrics.best_model_checkpoint) ?? metrics.global_step)}</strong></div>
       <div class="metric-row resource"><span>${metricLabel("best_metric", "Best eval loss")}</span><strong>${number(metrics.best_metric ?? metrics.eval_loss)}</strong></div>
       <div class="metric-row resource"><span>${metricLabel("training_time", "Fine-tuning wall time")}</span><strong>${minutes(resources.training_wall_time_minutes)}</strong></div>
-      <div class="metric-row resource"><span>${metricLabel("training_time", "Trainer runtime")}</span><strong>${minutesFromSeconds(trainMetrics.train_runtime)}</strong></div>
+      <div class="metric-row resource"><span>${metricLabel("trainer_runtime", "Trainer runtime")}</span><strong>${minutesFromSeconds(trainMetrics.train_runtime)}</strong></div>
       <div class="metric-row resource"><span>${metricLabel("train_steps_per_second", "Training speed")}</span><strong>${stepsPerSecond(trainMetrics.train_steps_per_second)}</strong></div>
       <div class="metric-row resource"><span>${metricLabel("gpu_utilization", "GPU utilization mean / peak")}</span><strong>${percent(resources.gpu_utilization_mean_percent)} / ${percent(resources.gpu_utilization_peak_percent)}</strong></div>
       <div class="metric-row resource"><span>${metricLabel("gpu_memory", "GPU memory mean / peak")}</span><strong>${mb(resources.gpu_memory_used_mean_mb)} / ${mb(resources.gpu_memory_used_peak_mb)}</strong></div>
@@ -344,11 +345,11 @@ function renderBenchmarkDetails(benchmark = {}, dataset = {}) {
     ["Training examples", formatNullable(fineTuning.train_examples)],
     ["Max training epochs", formatNullable(fineTuning.epochs)],
     ["Training eval examples", formatNullable(fineTuning.eval_examples)],
-    [metricLabel("best_epoch", "Best eval-loss epoch"), number(trainerMetrics.epoch)],
+    [metricLabel("best_epoch", "Best eval-loss epoch"), epochValue(trainerMetrics.epoch)],
     [metricLabel("best_step", "Best eval-loss step"), integer(stepFromCheckpoint(trainerMetrics.best_model_checkpoint) ?? trainerMetrics.global_step)],
     [metricLabel("best_metric", "Best eval loss"), number(trainerMetrics.best_metric ?? trainerMetrics.eval_loss)],
     [metricLabel("training_time", "Fine-tuning wall time"), minutes(resources.training_wall_time_minutes)],
-    [metricLabel("training_time", "Trainer runtime"), minutesFromSeconds(trainMetrics.train_runtime)],
+    [metricLabel("trainer_runtime", "Trainer runtime"), minutesFromSeconds(trainMetrics.train_runtime)],
     [metricLabel("train_steps_per_second", "Training speed"), stepsPerSecond(trainMetrics.train_steps_per_second)],
     [metricLabel("cpu_utilization", "CPU utilization"), percent(resources.cpu_utilization_estimated_percent)],
     [metricLabel("gpu_utilization", "GPU utilization mean / peak"), `${percent(resources.gpu_utilization_mean_percent)} / ${percent(resources.gpu_utilization_peak_percent)}`],
@@ -379,6 +380,11 @@ function formatNullable(value) {
 function number(value) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) return "n/a";
   return Number(value).toFixed(3);
+}
+
+function epochValue(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return "n/a";
+  return `${Number(value).toFixed(2)} epochs`;
 }
 
 function integer(value) {
