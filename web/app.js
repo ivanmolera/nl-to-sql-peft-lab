@@ -165,6 +165,7 @@ async function loadBenchmarks() {
           </header>
           ${hasTrainerMetrics ? renderTrainerMetrics(trainerMetrics) : ""}
           <div class="metric-row aux"><span>${metricLabel("exact_match", "Benchmark exact match")}</span><strong>${pct(metrics.exact_match)}</strong></div>
+          ${renderBenchmarkGenerativeMetrics(metrics)}
           <div class="metric-row aux"><span>${metricLabel("execution_accuracy", "Benchmark execution")}</span><strong>${pct(metrics.execution_accuracy)}</strong></div>
           <div class="metric-row aux"><span>${metricLabel("valid_sql", "Benchmark valid SQL")}</span><strong>${pct(metrics.sql_validity)}</strong></div>
           <div class="metric-row aux"><span>${metricLabel("latency", "Benchmark latency")}</span><strong>${milliseconds(metrics.latency_seconds_per_example)}</strong></div>
@@ -179,6 +180,24 @@ async function loadBenchmarks() {
   renderLatencyChart(els.chartLatency, data.models);
   renderBenchmarkDetails(data.benchmark, data.dataset);
   renderRuntime(data.runtime);
+}
+
+function renderBenchmarkGenerativeMetrics(metrics) {
+  const rows = [
+    metrics.bleu !== undefined
+      ? [metricLabel("bleu", "Benchmark BLEU"), pct(metrics.bleu)]
+      : null,
+    metrics.rouge_l !== undefined
+      ? [metricLabel("rouge_l", "Benchmark ROUGE-L"), pct(metrics.rouge_l)]
+      : null,
+    metrics.token_f1 !== undefined
+      ? [metricLabel("token_f1", "Benchmark Token F1"), pct(metrics.token_f1)]
+      : null,
+  ].filter(Boolean);
+
+  return rows
+    .map(([label, value]) => `<div class="metric-row aux"><span>${label}</span><strong>${value}</strong></div>`)
+    .join("");
 }
 
 function trainerMetricsForModel(model, data) {
