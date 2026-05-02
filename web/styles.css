@@ -318,6 +318,30 @@ main {
   color: #4f6230;
 }
 
+.parameter-block {
+  margin-bottom: 10px;
+}
+
+.metric-row.parameter {
+  color: #4b6571;
+}
+
+.metric-row.parameter strong {
+  color: #1f3540;
+}
+
+.muted-value {
+  color: var(--muted) !important;
+  font-weight: 750;
+}
+
+.parameter-note {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
 .resource-block {
   margin-top: 12px;
   padding-top: 4px;

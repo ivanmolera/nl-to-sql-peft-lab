@@ -284,6 +284,7 @@ The benchmark records per-example predictions and aggregated metrics:
 - Mean, p50, and p95 generation latency
 - Evaluation latency
 - Throughput
+- Model parameter metadata: total base-model parameters, fine-tuned/trainable parameters, and trainable-parameter percentage when available from the training artifact.
 - Runtime metadata: Docker image, platform, Python, PyTorch, CUDA/device, CPU and RAM.
 - Benchmark metadata: task, dataset split, sample size, calls per model, total model calls, sampling seed, prompt length, generation limits, and metric definitions.
 

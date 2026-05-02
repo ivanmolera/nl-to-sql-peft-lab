@@ -28,6 +28,7 @@ from peft_lab.training_utils import (
     add_training_run_metadata,
     best_metric_training_args,
     build_manual_best_peft_callback,
+    parameter_efficiency_metrics,
     ResourceMonitor,
 )
 
@@ -46,6 +47,7 @@ def main() -> None:
     if torch.cuda.is_available():
         model.to("cuda")
     model.print_trainable_parameters()
+    parameter_metrics = parameter_efficiency_metrics(model)
 
     train_raw = load_wikisql_split(
         config["dataset"]["name"],
@@ -92,7 +94,12 @@ def main() -> None:
     resource_metrics = resource_monitor.stop()
     metrics = best_callback.best_metrics or trainer.evaluate()
     metrics = add_best_model_metadata(metrics, trainer)
-    metrics = add_training_run_metadata(metrics, train_result.metrics, resource_metrics)
+    metrics = add_training_run_metadata(
+        metrics,
+        train_result.metrics,
+        resource_metrics,
+        parameter_metrics,
+    )
     save_best_adapter(best_callback.best_model_checkpoint, output_dir / "adapter", trainer)
     tokenizer.save_pretrained(output_dir / "adapter")
     save_json(output_dir / "eval_metrics.json", metrics)

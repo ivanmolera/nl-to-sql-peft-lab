@@ -197,11 +197,30 @@ def add_training_run_metadata(
     metrics: dict[str, Any],
     train_metrics: dict[str, Any],
     resource_metrics: dict[str, Any],
+    parameter_metrics: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     payload = dict(metrics)
     payload["train_metrics"] = train_metrics
     payload["resource_metrics"] = resource_metrics
+    if parameter_metrics:
+        payload["parameter_metrics"] = parameter_metrics
     return payload
+
+
+def parameter_efficiency_metrics(model) -> dict[str, Any]:
+    total = sum(parameter.numel() for parameter in model.parameters())
+    trainable = sum(
+        parameter.numel()
+        for parameter in model.parameters()
+        if parameter.requires_grad
+    )
+    ratio = trainable / total if total else 0.0
+    return {
+        "total_parameters": int(total),
+        "trainable_parameters": int(trainable),
+        "trainable_parameter_ratio": ratio,
+        "trainable_parameter_percent": ratio * 100,
+    }
 
 
 def max_rss_mb() -> float:

@@ -38,6 +38,7 @@ from peft_lab.training_utils import (
     best_model_training_args,
     build_early_stopping_callbacks,
     build_manual_best_peft_callback,
+    parameter_efficiency_metrics,
 )
 
 
@@ -70,6 +71,7 @@ def main() -> None:
     if torch.cuda.is_available() and method != "qlora":
         model.to("cuda")
     print_trainable_parameters(model)
+    parameter_metrics = parameter_efficiency_metrics(model)
 
     train_raw = load_wikisql_split(
         config["dataset"]["name"],
@@ -120,7 +122,12 @@ def main() -> None:
         else trainer.evaluate()
     )
     metrics = add_best_model_metadata(metrics, trainer)
-    metrics = add_training_run_metadata(metrics, train_result.metrics, resource_metrics)
+    metrics = add_training_run_metadata(
+        metrics,
+        train_result.metrics,
+        resource_metrics,
+        parameter_metrics,
+    )
 
     adapter_dir = output_dir / "adapter"
     if method == "bitfit":

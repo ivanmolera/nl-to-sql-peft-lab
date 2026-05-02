@@ -33,6 +33,7 @@ from peft_lab.training_utils import (
     add_training_run_metadata,
     best_model_training_args,
     build_early_stopping_callbacks,
+    parameter_efficiency_metrics,
     ResourceMonitor,
 )
 
@@ -65,6 +66,7 @@ def main() -> None:
     model = prepare_model_for_kbit_training(model)
     model = get_peft_model(model, build_lora_config(config))
     model.print_trainable_parameters()
+    parameter_metrics = parameter_efficiency_metrics(model)
 
     train_raw = load_wikisql_split(
         config["dataset"]["name"],
@@ -111,7 +113,12 @@ def main() -> None:
     train_result = trainer.train()
     resource_metrics = resource_monitor.stop()
     metrics = add_best_model_metadata(trainer.evaluate(), trainer)
-    metrics = add_training_run_metadata(metrics, train_result.metrics, resource_metrics)
+    metrics = add_training_run_metadata(
+        metrics,
+        train_result.metrics,
+        resource_metrics,
+        parameter_metrics,
+    )
     trainer.save_model(output_dir / "adapter")
     tokenizer.save_pretrained(output_dir / "adapter")
     save_json(output_dir / "eval_metrics.json", metrics)

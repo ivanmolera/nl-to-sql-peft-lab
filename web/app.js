@@ -54,17 +54,29 @@ const METRIC_DEFINITIONS = {
   gpu_utilization: "Mean and peak GPU utilization sampled with nvidia-smi during fine-tuning.",
   gpu_memory: "Mean and peak GPU memory allocated during fine-tuning, sampled from the training GPU.",
   ram_usage: "Peak resident memory used by the training process.",
+  total_parameters: "Total number of parameters in the base model before PEFT adapters are applied.",
+  trainable_parameters: "Number of parameters updated during fine-tuning. For PEFT runs this should be a small fraction of the base model.",
+  trainable_ratio: "Percentage of model parameters that were updated during fine-tuning.",
 };
 
 const MODEL_PARAMETER_COUNTS = {
-  "t5-small": 60_000_000,
-  "google-t5/t5-small": 60_000_000,
+  "t5-small": 60_506_624,
+  "google-t5/t5-small": 60_506_624,
   "gpt2": 124_000_000,
   "openai-community/gpt2": 124_000_000,
   "smollm2-135m-instruct": 135_000_000,
   "HuggingFaceTB/SmolLM2-135M-Instruct": 135_000_000,
   "qwen2.5-coder-0.5b-instruct": 500_000_000,
   "Qwen/Qwen2.5-Coder-0.5B-Instruct": 500_000_000,
+};
+
+const TRAINABLE_PARAMETER_FALLBACKS = {
+  "t5-small": {
+    qlora: 589_824,
+    bitfit: 512,
+    "prefix-tuning": 983_040,
+    ia3: 43_008,
+  },
 };
 
 async function api(path, options = {}) {
@@ -175,6 +187,7 @@ async function loadBenchmarks() {
             </div>
             <div class="score">${score}</div>
           </header>
+          ${renderParameterProfile(model, trainerMetrics, mode)}
           ${hasTrainerMetrics ? renderTrainerMetrics(trainerMetrics) : ""}
           ${renderBenchmarkMetrics(metrics)}
           ${hasTrainerMetrics ? renderTrainingResources(trainerMetrics) : ""}
@@ -220,6 +233,77 @@ function renderBenchmarkMetrics(metrics) {
     .join("");
 }
 
+function renderParameterProfile(model, trainerMetrics, mode) {
+  const profile = parameterProfileForModel(model, trainerMetrics, mode);
+  const trainableValue = profile.trainableParameters === null
+    ? profile.trainableFallbackLabel
+    : `${compactInteger(profile.trainableParameters)} (${parameterPercent(profile.trainableRatio)})`;
+  const trainableClass = profile.trainableParameters === null ? " muted-value" : "";
+  const note = profile.source === "trainer"
+    ? "Training artifact"
+    : profile.source === "estimate"
+      ? "Architecture estimate"
+      : profile.source === "base"
+        ? "Base model"
+        : "Pending training artifact";
+  return `
+    <div class="parameter-block">
+      <div class="metric-row parameter"><span>${metricLabel("total_parameters", "Total parameters")}</span><strong>${compactInteger(profile.totalParameters)}</strong></div>
+      <div class="metric-row parameter"><span>${metricLabel("trainable_parameters", "Fine-tuned parameters")}</span><strong class="${trainableClass.trim()}">${trainableValue}</strong></div>
+      <div class="parameter-note">${note}</div>
+    </div>
+  `;
+}
+
+function parameterProfileForModel(model, trainerMetrics, mode) {
+  const parameterMetrics = trainerMetrics?.parameter_metrics || {};
+  const totalParameters = Number(
+    parameterMetrics.total_parameters
+    ?? model.parameter_metrics?.total_parameters
+    ?? parameterCount(model),
+  );
+  const trainerTrainable = parameterMetrics.trainable_parameters
+    ?? model.parameter_metrics?.trainable_parameters;
+
+  if (trainerTrainable !== undefined) {
+    const trainableParameters = Number(trainerTrainable);
+    return {
+      totalParameters,
+      trainableParameters,
+      trainableRatio: parameterMetrics.trainable_parameter_ratio
+        ?? (totalParameters ? trainableParameters / totalParameters : 0),
+      source: "trainer",
+    };
+  }
+
+  if (mode === "zero-shot") {
+    return {
+      totalParameters,
+      trainableParameters: 0,
+      trainableRatio: 0,
+      source: "base",
+    };
+  }
+
+  const estimate = estimatedTrainableParameters(model, mode);
+  if (estimate !== null) {
+    return {
+      totalParameters,
+      trainableParameters: estimate,
+      trainableRatio: totalParameters ? estimate / totalParameters : 0,
+      source: "estimate",
+    };
+  }
+
+  return {
+    totalParameters,
+    trainableParameters: null,
+    trainableRatio: null,
+    trainableFallbackLabel: "Pending artifact",
+    source: "pending",
+  };
+}
+
 function trainerMetricsForModel(model, data) {
   const modelTrainerMetrics = model.training?.trainer_eval_metrics;
   if (hasValues(modelTrainerMetrics)) return modelTrainerMetrics;
@@ -258,8 +342,27 @@ function parameterCount(model) {
   if (text.includes("qwen2.5")) return 500_000_000;
   if (text.includes("smollm2")) return 135_000_000;
   if (text.includes("gpt2")) return 124_000_000;
-  if (text.includes("t5-small")) return 60_000_000;
+  if (text.includes("t5-small")) return 60_506_624;
   return Number.MAX_SAFE_INTEGER;
+}
+
+function estimatedTrainableParameters(model, mode) {
+  const family = modelFamilyKey(model);
+  return TRAINABLE_PARAMETER_FALLBACKS[family]?.[mode] ?? null;
+}
+
+function modelFamilyKey(model) {
+  const text = [
+    model.id,
+    model.name,
+    model.base_model_name,
+    model.base_model_id,
+  ].filter(Boolean).join(" ").toLowerCase();
+  if (text.includes("t5-small")) return "t5-small";
+  if (text.includes("smollm2")) return "smollm2-135m-instruct";
+  if (text.includes("qwen2.5") || text.includes("qwen2-5")) return "qwen2.5-coder-0.5b-instruct";
+  if (text.includes("gpt2")) return "gpt2";
+  return "";
 }
 
 function renderTrainerMetrics(metrics) {
@@ -456,6 +559,22 @@ function epochValue(value) {
 function integer(value) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) return "n/a";
   return Number(value).toLocaleString("en-US", { maximumFractionDigits: 0 });
+}
+
+function compactInteger(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return "n/a";
+  const numeric = Number(value);
+  if (numeric >= 1_000_000_000) return `${(numeric / 1_000_000_000).toFixed(2)}B`;
+  if (numeric >= 1_000_000) return `${(numeric / 1_000_000).toFixed(1)}M`;
+  if (numeric >= 1_000) return `${(numeric / 1_000).toFixed(1)}K`;
+  return numeric.toLocaleString("en-US", { maximumFractionDigits: 0 });
+}
+
+function parameterPercent(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return "n/a";
+  const numeric = Number(value) * 100;
+  if (numeric > 0 && numeric < 0.01) return "<0.01%";
+  return `${numeric.toFixed(numeric < 1 ? 2 : 1)}%`;
 }
 
 function stepsPerSecond(value) {
