@@ -164,11 +164,7 @@ async function loadBenchmarks() {
             <div class="score">${score}</div>
           </header>
           ${hasTrainerMetrics ? renderTrainerMetrics(trainerMetrics) : ""}
-          <div class="metric-row aux"><span>${metricLabel("exact_match", "Benchmark exact match")}</span><strong>${pct(metrics.exact_match)}</strong></div>
-          ${renderBenchmarkGenerativeMetrics(metrics)}
-          <div class="metric-row aux"><span>${metricLabel("execution_accuracy", "Benchmark execution")}</span><strong>${pct(metrics.execution_accuracy)}</strong></div>
-          <div class="metric-row aux"><span>${metricLabel("valid_sql", "Benchmark valid SQL")}</span><strong>${pct(metrics.sql_validity)}</strong></div>
-          <div class="metric-row aux"><span>${metricLabel("latency", "Benchmark latency")}</span><strong>${milliseconds(metrics.latency_seconds_per_example)}</strong></div>
+          ${renderBenchmarkMetrics(metrics)}
           ${hasTrainerMetrics ? renderTrainingResources(trainerMetrics) : ""}
         </article>
       `;
@@ -182,8 +178,17 @@ async function loadBenchmarks() {
   renderRuntime(data.runtime);
 }
 
-function renderBenchmarkGenerativeMetrics(metrics) {
+function renderBenchmarkMetrics(metrics) {
   const rows = [
+    metrics.exact_match !== undefined
+      ? [metricLabel("exact_match", "Benchmark exact match"), pct(metrics.exact_match)]
+      : null,
+    metrics.sql_validity !== undefined
+      ? [metricLabel("valid_sql", "Benchmark valid SQL"), pct(metrics.sql_validity)]
+      : null,
+    metrics.execution_accuracy !== undefined
+      ? [metricLabel("execution_accuracy", "Benchmark execution"), pct(metrics.execution_accuracy)]
+      : null,
     metrics.bleu !== undefined
       ? [metricLabel("bleu", "Benchmark BLEU"), pct(metrics.bleu)]
       : null,
@@ -192,6 +197,9 @@ function renderBenchmarkGenerativeMetrics(metrics) {
       : null,
     metrics.token_f1 !== undefined
       ? [metricLabel("token_f1", "Benchmark Token F1"), pct(metrics.token_f1)]
+      : null,
+    metrics.latency_seconds_per_example !== undefined
+      ? [metricLabel("latency", "Benchmark latency"), milliseconds(metrics.latency_seconds_per_example)]
       : null,
   ].filter(Boolean);
 
