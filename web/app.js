@@ -217,18 +217,6 @@ function hasValues(value) {
 
 function renderTrainerMetrics(metrics) {
   const rows = [
-    metrics.eval_exact_match !== undefined
-      ? [metricLabel("exact_match", "Training eval exact match"), pct(metrics.eval_exact_match)]
-      : null,
-    metrics.eval_bleu !== undefined
-      ? [metricLabel("bleu", "Training eval BLEU"), pct(metrics.eval_bleu)]
-      : null,
-    metrics.eval_rouge_l !== undefined
-      ? [metricLabel("rouge_l", "Training eval ROUGE-L"), pct(metrics.eval_rouge_l)]
-      : null,
-    metrics.eval_token_f1 !== undefined
-      ? [metricLabel("token_f1", "Training eval Token F1"), pct(metrics.eval_token_f1)]
-      : null,
     metrics.eval_loss !== undefined
       ? [metricLabel("eval_loss", "Training eval loss"), number(metrics.eval_loss), "aux"]
       : null,
