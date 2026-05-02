@@ -148,11 +148,10 @@ async function loadBenchmarks() {
   els.leaderboard.innerHTML = data.models
     .map((model) => {
       const metrics = model.metrics;
-      const trainerMetrics = model.training?.trainer_eval_metrics
-        || data.benchmark?.fine_tuning?.trainer_eval_metrics
-        || null;
-      const hasTrainerMetrics = trainerMetrics && trainerMetrics.eval_exact_match !== undefined;
-      const score = hasTrainerMetrics
+      const trainerMetrics = trainerMetricsForModel(model, data);
+      const hasTrainerMetrics = hasValues(trainerMetrics);
+      const hasTrainerExactMatch = trainerMetrics?.eval_exact_match !== undefined;
+      const score = hasTrainerExactMatch
         ? pct(trainerMetrics.eval_exact_match)
         : pct(metrics.execution_accuracy);
       return `
@@ -182,14 +181,45 @@ async function loadBenchmarks() {
   renderRuntime(data.runtime);
 }
 
+function trainerMetricsForModel(model, data) {
+  const modelTrainerMetrics = model.training?.trainer_eval_metrics;
+  if (hasValues(modelTrainerMetrics)) return modelTrainerMetrics;
+
+  const aggregateTrainerMetrics = data.benchmark?.fine_tuning?.trainer_eval_metrics;
+  if (data.models?.length === 1 && hasValues(aggregateTrainerMetrics)) {
+    return aggregateTrainerMetrics;
+  }
+  return null;
+}
+
+function hasValues(value) {
+  return !!value && Object.keys(value).length > 0;
+}
+
 function renderTrainerMetrics(metrics) {
-  return `
-    <div class="metric-row"><span>${metricLabel("exact_match", "Training eval exact match")}</span><strong>${pct(metrics.eval_exact_match)}</strong></div>
-    <div class="metric-row"><span>${metricLabel("bleu", "Training eval BLEU")}</span><strong>${pct(metrics.eval_bleu)}</strong></div>
-    <div class="metric-row"><span>${metricLabel("rouge_l", "Training eval ROUGE-L")}</span><strong>${pct(metrics.eval_rouge_l)}</strong></div>
-    <div class="metric-row"><span>${metricLabel("token_f1", "Training eval Token F1")}</span><strong>${pct(metrics.eval_token_f1)}</strong></div>
-    <div class="metric-row aux"><span>${metricLabel("eval_loss", "Training eval loss")}</span><strong>${number(metrics.eval_loss)}</strong></div>
-  `;
+  const rows = [
+    metrics.eval_exact_match !== undefined
+      ? [metricLabel("exact_match", "Training eval exact match"), pct(metrics.eval_exact_match)]
+      : null,
+    metrics.eval_bleu !== undefined
+      ? [metricLabel("bleu", "Training eval BLEU"), pct(metrics.eval_bleu)]
+      : null,
+    metrics.eval_rouge_l !== undefined
+      ? [metricLabel("rouge_l", "Training eval ROUGE-L"), pct(metrics.eval_rouge_l)]
+      : null,
+    metrics.eval_token_f1 !== undefined
+      ? [metricLabel("token_f1", "Training eval Token F1"), pct(metrics.eval_token_f1)]
+      : null,
+    metrics.eval_loss !== undefined
+      ? [metricLabel("eval_loss", "Training eval loss"), number(metrics.eval_loss), "aux"]
+      : null,
+  ].filter(Boolean);
+
+  return rows
+    .map(([label, value, className = ""]) => (
+      `<div class="metric-row ${className}"><span>${label}</span><strong>${value}</strong></div>`
+    ))
+    .join("");
 }
 
 function renderTrainingResources(metrics) {
