@@ -1,0 +1,52 @@
+experiment:
+  name: gpt2-wikisql-qlora-early-stopping-benchmark
+  seed: 42
+
+model:
+  id: gpt2-qlora-v0-2
+  name: openai-community/gpt2
+  architecture: causal
+  role: GPT-2 base fine-tuned with QLoRA and early stopping
+  adapter_path: outputs/v0.2/gpt2-wikisql-qlora-early-stopping/adapter
+
+peft:
+  method: qlora
+  label: QLoRA
+
+dataset:
+  name: Salesforce/wikisql
+  split: validation
+  sample_size: 1000
+  sample_strategy: random
+
+prompt:
+  max_source_length: 384
+  max_new_tokens: 96
+
+generation:
+  do_sample: false
+  temperature: 0.0
+
+fine_tuning:
+  technique: QLoRA
+  base_model: openai-community/gpt2
+  dataset: Salesforce/wikisql
+  train_split: train
+  eval_split: validation
+  train_examples: 56355
+  eval_examples: 1024
+  epochs: 10
+  train_limit: null
+  selection_metric: eval_loss
+  early_stopping_patience: 3
+  adapter: LoRA r=16 alpha=32 dropout=0.05 on GPT-2 c_attn/c_proj Conv1D projections
+  quantization: 4-bit NF4 with double quantization
+  eval_metrics_path: outputs/v0.2/gpt2-wikisql-qlora-early-stopping/eval_metrics.json
+
+reporting:
+  preview_limit: 20
+
+output:
+  dir: benchmark_results/v0_2/qlora
+  model_file: qlora_wikisql_gpt2.json
+  index_path: benchmark_results/v0_2/qlora/qlora_wikisql_index.json

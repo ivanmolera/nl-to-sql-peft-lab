@@ -1,0 +1,52 @@
+experiment:
+  name: gpt2-wikisql-prefix-tuning-early-stopping-benchmark
+  seed: 42
+
+model:
+  id: gpt2-prefix-tuning-v0-2
+  name: openai-community/gpt2
+  architecture: causal
+  role: GPT-2 base fine-tuned with Prefix Tuning and early stopping
+  adapter_path: outputs/v0.2/gpt2-wikisql-prefix-tuning-early-stopping/adapter
+
+peft:
+  method: prefix-tuning
+  label: Prefix Tuning
+
+dataset:
+  name: Salesforce/wikisql
+  split: validation
+  sample_size: 1000
+  sample_strategy: random
+
+prompt:
+  max_source_length: 384
+  max_new_tokens: 96
+
+generation:
+  do_sample: false
+  temperature: 0.0
+
+fine_tuning:
+  technique: Prefix Tuning
+  base_model: openai-community/gpt2
+  dataset: Salesforce/wikisql
+  train_split: train
+  eval_split: validation
+  train_examples: 56355
+  eval_examples: 1024
+  epochs: 10
+  train_limit: null
+  selection_metric: eval_loss
+  early_stopping_patience: 3
+  adapter: Prefix Tuning with 20 virtual tokens and projection enabled
+  quantization: None
+  eval_metrics_path: outputs/v0.2/gpt2-wikisql-prefix-tuning-early-stopping/eval_metrics.json
+
+reporting:
+  preview_limit: 20
+
+output:
+  dir: benchmark_results/v0_2/prefix_tuning
+  model_file: prefix_tuning_wikisql_gpt2.json
+  index_path: benchmark_results/v0_2/prefix_tuning/prefix_tuning_wikisql_index.json

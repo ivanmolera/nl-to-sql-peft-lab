@@ -24,6 +24,10 @@ models:
     name: Qwen/Qwen2.5-Coder-0.5B-Instruct
     architecture: causal
     role: Code-specialized decoder-only LLM
+  - id: gpt2
+    name: openai-community/gpt2
+    architecture: causal
+    role: GPT-2 base decoder-only language model
 
 generation:
   temperature: 0.0

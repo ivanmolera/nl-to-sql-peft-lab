@@ -9,8 +9,9 @@ WikiSQL text-to-SQL task. It combines training pipelines, benchmark scripts, sto
 evaluation artifacts, and a web dashboard where users can compare results and test
 trained variants on real WikiSQL examples.
 
-The model suite includes `google-t5/t5-small`, `HuggingFaceTB/SmolLM2-135M-Instruct`,
-and `Qwen/Qwen2.5-Coder-0.5B-Instruct`. The lab is designed to apply the same
+The model suite includes `google-t5/t5-small`, `openai-community/gpt2`,
+`HuggingFaceTB/SmolLM2-135M-Instruct`, and
+`Qwen/Qwen2.5-Coder-0.5B-Instruct`. The lab is designed to apply the same
 evaluation flow to the full selected model set. The benchmark dataset is
 `Salesforce/wikisql`, with a project-specific WikiSQL NL-to-SQL benchmark runner
 designed to be compatible with a Hugging Face LightEval custom task. The PEFT
@@ -58,6 +59,7 @@ python scripts/download_hf_assets.py --config configs/hf_assets.yaml
 The script downloads:
 
 - `google-t5/t5-small`
+- `openai-community/gpt2`
 - `HuggingFaceTB/SmolLM2-135M-Instruct`
 - `Qwen/Qwen2.5-Coder-0.5B-Instruct`
 - `Salesforce/wikisql` splits: `train`, `validation`, `test`
@@ -289,6 +291,7 @@ It writes one file per model plus an index consumed by the web app:
 
 ```text
 benchmark_results/zero_shot/zero_shot_wikisql_t5-small.json
+benchmark_results/zero_shot/zero_shot_wikisql_gpt2.json
 benchmark_results/zero_shot/zero_shot_wikisql_smollm2-135m-instruct.json
 benchmark_results/zero_shot/zero_shot_wikisql_qwen2.5-coder-0.5b-instruct.json
 benchmark_results/zero_shot/zero_shot_wikisql_index.json

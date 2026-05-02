@@ -8,6 +8,9 @@ models:
   - id: qwen2.5-coder-0.5b-instruct
     name: Qwen/Qwen2.5-Coder-0.5B-Instruct
     kind: causal
+  - id: gpt2
+    name: openai-community/gpt2
+    kind: causal
 
 datasets:
   - name: Salesforce/wikisql
