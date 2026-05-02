@@ -349,9 +349,6 @@ function formatGpu(runtime = {}) {
 function renderBenchmarkDetails(benchmark = {}, dataset = {}) {
   const generation = benchmark.generation || {};
   const fineTuning = benchmark.fine_tuning || {};
-  const trainerMetrics = fineTuning.trainer_eval_metrics || {};
-  const trainMetrics = trainerMetrics.train_metrics || {};
-  const resources = trainerMetrics.resource_metrics || {};
   const sampleSize = benchmark.sample_size ?? dataset?.sample_size;
   const callsPerModel = benchmark.calls_per_model ?? sampleSize;
   const totalCalls = benchmark.total_model_calls ?? (
@@ -380,26 +377,7 @@ function renderBenchmarkDetails(benchmark = {}, dataset = {}) {
     ["Benchmark sample size", formatNullable(sampleSize)],
     ["Benchmark calls/model", formatNullable(callsPerModel)],
     ["Benchmark total calls", formatNullable(totalCalls)],
-    ["Fine-tuning", fineTuning.technique],
-    ["Training split", fineTuning.train_split],
-    ["Training limit", fineTuning.train_limit === null ? "Full split" : formatNullable(fineTuning.train_limit)],
-    ["Training examples", formatNullable(fineTuning.train_examples)],
-    ["Max training epochs", formatNullable(fineTuning.epochs)],
-    ["Training eval examples", formatNullable(fineTuning.eval_examples)],
-    [metricLabel("best_epoch", "Best eval-loss epoch"), epochValue(trainerMetrics.epoch)],
-    [metricLabel("best_step", "Best eval-loss step"), integer(stepFromCheckpoint(trainerMetrics.best_model_checkpoint) ?? trainerMetrics.global_step)],
-    [metricLabel("best_metric", "Best eval loss"), number(trainerMetrics.best_metric ?? trainerMetrics.eval_loss)],
-    [metricLabel("training_time", "Fine-tuning wall time"), minutes(resources.training_wall_time_minutes)],
-    [metricLabel("trainer_runtime", "Trainer runtime"), minutesFromSeconds(trainMetrics.train_runtime)],
-    [metricLabel("train_steps_per_second", "Training speed"), stepsPerSecond(trainMetrics.train_steps_per_second)],
-    [metricLabel("cpu_utilization", "CPU utilization"), percent(resources.cpu_utilization_estimated_percent)],
-    [metricLabel("gpu_utilization", "GPU utilization mean / peak"), `${percent(resources.gpu_utilization_mean_percent)} / ${percent(resources.gpu_utilization_peak_percent)}`],
-    [metricLabel("gpu_memory", "GPU memory mean / peak"), `${mb(resources.gpu_memory_used_mean_mb)} / ${mb(resources.gpu_memory_used_peak_mb)}`],
-    [metricLabel("ram_usage", "Peak RAM RSS"), mb(resources.process_max_rss_mb)],
-    [metricLabel("exact_match", "Trainer eval EM"), trainerMetrics.eval_exact_match !== undefined ? pct(trainerMetrics.eval_exact_match) : null],
-    [metricLabel("bleu", "Trainer eval BLEU"), trainerMetrics.eval_bleu !== undefined ? pct(trainerMetrics.eval_bleu) : null],
-    [metricLabel("rouge_l", "Trainer eval ROUGE-L"), trainerMetrics.eval_rouge_l !== undefined ? pct(trainerMetrics.eval_rouge_l) : null],
-    [metricLabel("token_f1", "Trainer eval Token F1"), trainerMetrics.eval_token_f1 !== undefined ? pct(trainerMetrics.eval_token_f1) : null],
+    ["Selected PEFT technique", fineTuning.technique || benchmark.mode],
     ["Models", formatNullable(benchmark.models_evaluated)],
     ["Sampling", benchmark.sample_strategy],
     ["Seed", formatNullable(benchmark.seed)],
