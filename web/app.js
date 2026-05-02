@@ -56,6 +56,17 @@ const METRIC_DEFINITIONS = {
   ram_usage: "Peak resident memory used by the training process.",
 };
 
+const MODEL_PARAMETER_COUNTS = {
+  "t5-small": 60_000_000,
+  "google-t5/t5-small": 60_000_000,
+  "gpt2": 124_000_000,
+  "openai-community/gpt2": 124_000_000,
+  "smollm2-135m-instruct": 135_000_000,
+  "HuggingFaceTB/SmolLM2-135M-Instruct": 135_000_000,
+  "qwen2.5-coder-0.5b-instruct": 500_000_000,
+  "Qwen/Qwen2.5-Coder-0.5B-Instruct": 500_000_000,
+};
+
 async function api(path, options = {}) {
   const response = await fetch(path, {
     headers: { "Content-Type": "application/json" },
@@ -119,14 +130,15 @@ async function loadBenchmarks() {
   els.modeDescription.textContent = data.available
     ? data.description || ""
     : `${data.description || ""} · results pending`;
-  state.benchmarkModels = data.models;
+  const models = sortModelsByParameters(data.models || []);
+  state.benchmarkModels = models;
   els.source.textContent = data.is_demo
     ? "Demo results"
     : data.source
       ? `Results: ${data.source}`
       : "No results";
 
-  if (!data.available || !data.models.length) {
+  if (!data.available || !models.length) {
     els.leaderboard.innerHTML = `
       <article class="model-card">
         <header>
@@ -145,7 +157,7 @@ async function loadBenchmarks() {
     return;
   }
 
-  els.leaderboard.innerHTML = data.models
+  els.leaderboard.innerHTML = models
     .map((model) => {
       const metrics = model.metrics;
       const trainerMetrics = trainerMetricsForModel(model, data);
@@ -171,9 +183,9 @@ async function loadBenchmarks() {
     })
     .join("");
 
-  renderChart(els.chartExec, data.models, "execution_accuracy", pct);
-  renderChart(els.chartValid, data.models, "sql_validity", pct);
-  renderLatencyChart(els.chartLatency, data.models);
+  renderChart(els.chartExec, models, "execution_accuracy", pct);
+  renderChart(els.chartValid, models, "sql_validity", pct);
+  renderLatencyChart(els.chartLatency, models);
   renderBenchmarkDetails(data.benchmark, data.dataset);
   renderRuntime(data.runtime);
 }
@@ -221,6 +233,33 @@ function trainerMetricsForModel(model, data) {
 
 function hasValues(value) {
   return !!value && Object.keys(value).length > 0;
+}
+
+function sortModelsByParameters(models) {
+  return [...models].sort((left, right) => {
+    const byParams = parameterCount(left) - parameterCount(right);
+    if (byParams !== 0) return byParams;
+    return shortName(left.name || left.id).localeCompare(shortName(right.name || right.id));
+  });
+}
+
+function parameterCount(model) {
+  const candidates = [
+    model.id,
+    model.name,
+    model.base_model_name,
+    model.base_model_id,
+  ];
+  for (const candidate of candidates) {
+    const count = MODEL_PARAMETER_COUNTS[candidate];
+    if (count !== undefined) return count;
+  }
+  const text = candidates.filter(Boolean).join(" ").toLowerCase();
+  if (text.includes("qwen2.5")) return 500_000_000;
+  if (text.includes("smollm2")) return 135_000_000;
+  if (text.includes("gpt2")) return 124_000_000;
+  if (text.includes("t5-small")) return 60_000_000;
+  return Number.MAX_SAFE_INTEGER;
 }
 
 function renderTrainerMetrics(metrics) {
@@ -466,12 +505,12 @@ function mb(value) {
 
 async function loadModels() {
   const data = await api("/api/models");
-  state.liveModels = data.models;
+  state.liveModels = sortModelsByParameters(data.models || []);
   renderModelOptions();
 }
 
 function renderModelOptions() {
-  const models = liveModelsForSelectedMode();
+  const models = sortModelsByParameters(liveModelsForSelectedMode());
   els.modelSelect.innerHTML = models
     .map((model) => `<option value="${model.id}">${shortName(model.name)}</option>`)
     .join("");
