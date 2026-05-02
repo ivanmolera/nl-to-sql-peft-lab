@@ -35,7 +35,7 @@ PREFIX_T5_ADAPTER = (
 )
 IA3_T5_ADAPTER = ROOT_DIR / "model_artifacts" / "ia3" / "t5-small-wikisql-ia3" / "adapter"
 
-app = FastAPI(title="NL-to-SQL PEFT Lab ML API", version="0.1.1")
+app = FastAPI(title="NL-to-SQL PEFT Lab ML API", version="0.1.2")
 
 
 @dataclass

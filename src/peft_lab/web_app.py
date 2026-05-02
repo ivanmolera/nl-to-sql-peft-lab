@@ -64,7 +64,7 @@ BENCHMARK_MODES = [
     },
 ]
 
-app = FastAPI(title="NL-to-SQL PEFT Lab", version="0.1.1")
+app = FastAPI(title="NL-to-SQL PEFT Lab", version="0.1.2")
 app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
 
 

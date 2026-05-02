@@ -335,13 +335,6 @@ main {
   font-weight: 750;
 }
 
-.parameter-note {
-  margin-top: 2px;
-  color: var(--muted);
-  font-size: 0.74rem;
-  font-weight: 700;
-}
-
 .resource-block {
   margin-top: 12px;
   padding-top: 4px;

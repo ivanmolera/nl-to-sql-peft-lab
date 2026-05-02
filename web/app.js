@@ -239,18 +239,10 @@ function renderParameterProfile(model, trainerMetrics, mode) {
     ? profile.trainableFallbackLabel
     : `${compactInteger(profile.trainableParameters)} (${parameterPercent(profile.trainableRatio)})`;
   const trainableClass = profile.trainableParameters === null ? " muted-value" : "";
-  const note = profile.source === "trainer"
-    ? "Training artifact"
-    : profile.source === "estimate"
-      ? "Architecture estimate"
-      : profile.source === "base"
-        ? "Base model"
-        : "Pending training artifact";
   return `
     <div class="parameter-block">
       <div class="metric-row parameter"><span>${metricLabel("total_parameters", "Total parameters")}</span><strong>${compactInteger(profile.totalParameters)}</strong></div>
       <div class="metric-row parameter"><span>${metricLabel("trainable_parameters", "Fine-tuned parameters")}</span><strong class="${trainableClass.trim()}">${trainableValue}</strong></div>
-      <div class="parameter-note">${note}</div>
     </div>
   `;
 }
