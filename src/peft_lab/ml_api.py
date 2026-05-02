@@ -24,16 +24,99 @@ from peft_lab.wikisql import get_table
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 BASELINE_CONFIG = ROOT_DIR / "configs" / "zero_shot_wikisql_baseline.yaml"
-QLORA_T5_ADAPTER = ROOT_DIR / "model_artifacts" / "qlora" / "t5-small-wikisql-qlora" / "adapter"
-BITFIT_T5_ADAPTER = ROOT_DIR / "model_artifacts" / "bitfit" / "t5-small-wikisql-bitfit" / "adapter"
-PREFIX_T5_ADAPTER = (
-    ROOT_DIR
-    / "model_artifacts"
-    / "prefix_tuning"
-    / "t5-small-wikisql-prefix-tuning"
-    / "adapter"
-)
-IA3_T5_ADAPTER = ROOT_DIR / "model_artifacts" / "ia3" / "t5-small-wikisql-ia3" / "adapter"
+
+FINE_TUNED_MODEL_SPECS = [
+    {
+        "id": "t5-small-qlora",
+        "name": "google-t5/t5-small + QLoRA",
+        "architecture": "seq2seq",
+        "role": "T5-small fine-tuned on WikiSQL with QLoRA",
+        "base_model_name": "google-t5/t5-small",
+        "adapter_path": ROOT_DIR / "model_artifacts" / "qlora" / "t5-small-wikisql-qlora" / "adapter",
+        "peft_method": "qlora",
+        "adapter_type": "peft",
+    },
+    {
+        "id": "smollm2-qlora",
+        "name": "HuggingFaceTB/SmolLM2-135M-Instruct + QLoRA",
+        "architecture": "causal",
+        "role": "SmolLM2-135M fine-tuned on WikiSQL with QLoRA",
+        "base_model_name": "HuggingFaceTB/SmolLM2-135M-Instruct",
+        "adapter_path": ROOT_DIR / "model_artifacts" / "qlora" / "smollm2-wikisql-qlora" / "adapter",
+        "peft_method": "qlora",
+        "adapter_type": "peft",
+    },
+    {
+        "id": "t5-small-bitfit",
+        "name": "google-t5/t5-small + BitFit",
+        "architecture": "seq2seq",
+        "role": "T5-small fine-tuned on WikiSQL with BitFit",
+        "base_model_name": "google-t5/t5-small",
+        "adapter_path": ROOT_DIR / "model_artifacts" / "bitfit" / "t5-small-wikisql-bitfit" / "adapter",
+        "peft_method": "bitfit",
+        "adapter_type": "bitfit",
+    },
+    {
+        "id": "smollm2-bitfit",
+        "name": "HuggingFaceTB/SmolLM2-135M-Instruct + BitFit",
+        "architecture": "causal",
+        "role": "SmolLM2-135M fine-tuned on WikiSQL with BitFit",
+        "base_model_name": "HuggingFaceTB/SmolLM2-135M-Instruct",
+        "adapter_path": ROOT_DIR / "model_artifacts" / "bitfit" / "smollm2-wikisql-bitfit" / "adapter",
+        "peft_method": "bitfit",
+        "adapter_type": "bitfit",
+    },
+    {
+        "id": "qwen2-5-bitfit",
+        "name": "Qwen/Qwen2.5-Coder-0.5B-Instruct + BitFit",
+        "architecture": "causal",
+        "role": "Qwen2.5-Coder-0.5B fine-tuned on WikiSQL with BitFit",
+        "base_model_name": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+        "adapter_path": ROOT_DIR / "model_artifacts" / "bitfit" / "qwen2-5-wikisql-bitfit" / "adapter",
+        "peft_method": "bitfit",
+        "adapter_type": "bitfit",
+    },
+    {
+        "id": "t5-small-prefix-tuning",
+        "name": "google-t5/t5-small + Prefix Tuning",
+        "architecture": "seq2seq",
+        "role": "T5-small fine-tuned on WikiSQL with Prefix Tuning",
+        "base_model_name": "google-t5/t5-small",
+        "adapter_path": ROOT_DIR / "model_artifacts" / "prefix_tuning" / "t5-small-wikisql-prefix-tuning" / "adapter",
+        "peft_method": "prefix-tuning",
+        "adapter_type": "peft",
+    },
+    {
+        "id": "smollm2-prefix-tuning",
+        "name": "HuggingFaceTB/SmolLM2-135M-Instruct + Prefix Tuning",
+        "architecture": "causal",
+        "role": "SmolLM2-135M fine-tuned on WikiSQL with Prefix Tuning",
+        "base_model_name": "HuggingFaceTB/SmolLM2-135M-Instruct",
+        "adapter_path": ROOT_DIR / "model_artifacts" / "prefix_tuning" / "smollm2-wikisql-prefix-tuning" / "adapter",
+        "peft_method": "prefix-tuning",
+        "adapter_type": "peft",
+    },
+    {
+        "id": "qwen2-5-prefix-tuning",
+        "name": "Qwen/Qwen2.5-Coder-0.5B-Instruct + Prefix Tuning",
+        "architecture": "causal",
+        "role": "Qwen2.5-Coder-0.5B fine-tuned on WikiSQL with Prefix Tuning",
+        "base_model_name": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+        "adapter_path": ROOT_DIR / "model_artifacts" / "prefix_tuning" / "qwen2-5-wikisql-prefix-tuning" / "adapter",
+        "peft_method": "prefix-tuning",
+        "adapter_type": "peft",
+    },
+    {
+        "id": "t5-small-ia3",
+        "name": "google-t5/t5-small + IA3",
+        "architecture": "seq2seq",
+        "role": "T5-small fine-tuned on WikiSQL with IA3",
+        "base_model_name": "google-t5/t5-small",
+        "adapter_path": ROOT_DIR / "model_artifacts" / "ia3" / "t5-small-wikisql-ia3" / "adapter",
+        "peft_method": "ia3",
+        "adapter_type": "peft",
+    },
+]
 
 app = FastAPI(title="NL-to-SQL PEFT Lab ML API", version="0.1.2")
 
@@ -167,49 +250,16 @@ def get_model_specs() -> dict[str, LiveModelSpec]:
         model_config["id"]: LiveModelSpec(**model_config)
         for model_config in get_config()["models"]
     }
-    if QLORA_T5_ADAPTER.exists():
-        specs["t5-small-qlora"] = LiveModelSpec(
-            id="t5-small-qlora",
-            name="google-t5/t5-small + QLoRA",
-            architecture="seq2seq",
-            role="T5-small fine-tuned on WikiSQL with QLoRA",
-            base_model_name="google-t5/t5-small",
-            adapter_path=str(QLORA_T5_ADAPTER),
-            peft_method="qlora",
-            adapter_type="peft",
-        )
-    if BITFIT_T5_ADAPTER.exists():
-        specs["t5-small-bitfit"] = LiveModelSpec(
-            id="t5-small-bitfit",
-            name="google-t5/t5-small + BitFit",
-            architecture="seq2seq",
-            role="T5-small fine-tuned on WikiSQL with BitFit",
-            base_model_name="google-t5/t5-small",
-            adapter_path=str(BITFIT_T5_ADAPTER),
-            peft_method="bitfit",
-            adapter_type="bitfit",
-        )
-    if PREFIX_T5_ADAPTER.exists():
-        specs["t5-small-prefix-tuning"] = LiveModelSpec(
-            id="t5-small-prefix-tuning",
-            name="google-t5/t5-small + Prefix Tuning",
-            architecture="seq2seq",
-            role="T5-small fine-tuned on WikiSQL with Prefix Tuning",
-            base_model_name="google-t5/t5-small",
-            adapter_path=str(PREFIX_T5_ADAPTER),
-            peft_method="prefix-tuning",
-            adapter_type="peft",
-        )
-    if IA3_T5_ADAPTER.exists():
-        specs["t5-small-ia3"] = LiveModelSpec(
-            id="t5-small-ia3",
-            name="google-t5/t5-small + IA3",
-            architecture="seq2seq",
-            role="T5-small fine-tuned on WikiSQL with IA3",
-            base_model_name="google-t5/t5-small",
-            adapter_path=str(IA3_T5_ADAPTER),
-            peft_method="ia3",
-            adapter_type="peft",
+    for fine_tuned_config in FINE_TUNED_MODEL_SPECS:
+        adapter_path = fine_tuned_config["adapter_path"]
+        if not adapter_path.exists():
+            continue
+        spec_config = {
+            **fine_tuned_config,
+            "adapter_path": str(adapter_path),
+        }
+        specs[spec_config["id"]] = LiveModelSpec(
+            **spec_config,
         )
     return specs
 
@@ -217,7 +267,7 @@ def get_model_specs() -> dict[str, LiveModelSpec]:
 @lru_cache(maxsize=8)
 def get_loaded_model(model_id: str):
     model_spec = get_model_specs()[model_id]
-    tokenizer_source = model_spec.adapter_path or model_spec.base_model_name or model_spec.name
+    tokenizer_source = model_spec.base_model_name or model_spec.name
     tokenizer = AutoTokenizer.from_pretrained(
         tokenizer_source,
         trust_remote_code=True,
@@ -231,8 +281,6 @@ def get_loaded_model(model_id: str):
 
 def load_live_model(model_spec: LiveModelSpec):
     if model_spec.adapter_path:
-        if model_spec.architecture != "seq2seq":
-            raise ValueError(f"Unsupported adapter architecture: {model_spec.architecture}")
         base_model = load_model(model_spec.generation_spec(), get_config())
         if model_spec.adapter_type == "bitfit":
             return load_bitfit_adapter(base_model, Path(model_spec.adapter_path))

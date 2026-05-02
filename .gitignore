@@ -7,3 +7,12 @@ __pycache__/
 outputs/
 wandb/
 mlruns/
+model_artifacts/**/README.md
+model_artifacts/**/added_tokens.json
+model_artifacts/**/chat_template.jinja
+model_artifacts/**/merges.txt
+model_artifacts/**/special_tokens_map.json
+model_artifacts/**/tokenizer.json
+model_artifacts/**/tokenizer_config.json
+model_artifacts/**/training_args.bin
+model_artifacts/**/vocab.json

@@ -1,0 +1,6 @@
+{
+  "base_model_name_or_path": "HuggingFaceTB/SmolLM2-135M-Instruct",
+  "peft_type": "BITFIT",
+  "target": "parameters whose name contains 'bias'",
+  "trainable_parameters": []
+}
