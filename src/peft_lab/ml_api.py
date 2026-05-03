@@ -126,6 +126,16 @@ FINE_TUNED_MODEL_SPECS = [
         "peft_method": "ia3",
         "adapter_type": "peft",
     },
+    {
+        "id": "qwen2-5-ia3",
+        "name": "Qwen/Qwen2.5-Coder-0.5B-Instruct + IA3",
+        "architecture": "causal",
+        "role": "Qwen2.5-Coder-0.5B fine-tuned on WikiSQL with IA3",
+        "base_model_name": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+        "adapter_path": ROOT_DIR / "model_artifacts" / "ia3" / "qwen2-5-wikisql-ia3" / "adapter",
+        "peft_method": "ia3",
+        "adapter_type": "peft",
+    },
 ]
 
 app = FastAPI(title="NL-to-SQL PEFT Lab ML API", version="0.1.2")

@@ -176,10 +176,7 @@ async function loadBenchmarks() {
       const metrics = model.metrics;
       const trainerMetrics = trainerMetricsForModel(model, data);
       const hasTrainerMetrics = hasValues(trainerMetrics);
-      const hasTrainerExactMatch = trainerMetrics?.eval_exact_match !== undefined;
-      const score = hasTrainerExactMatch
-        ? pct(trainerMetrics.eval_exact_match)
-        : pct(metrics.execution_accuracy);
+      const score = pct(metrics.execution_accuracy ?? metrics.exact_match);
       return `
         <article class="model-card">
           <header>
