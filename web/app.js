@@ -387,8 +387,8 @@ function renderTrainingResources(metrics, training = {}, benchmarkMetrics = {}) 
       <div class="metric-row resource"><span>${metricLabel("best_step", "Best eval-loss step")}</span><strong>${integer(stepFromCheckpoint(metrics.best_model_checkpoint) ?? metrics.global_step)}</strong></div>
       <div class="metric-row resource"><span>${metricLabel("best_metric", "Best eval loss")}</span><strong>${number(metrics.best_metric ?? metrics.eval_loss)}</strong></div>
       <div class="metric-row resource"><span>${metricLabel("training_time", "Fine-tuning wall time")}</span><strong>${minutes(resources.training_wall_time_minutes)}</strong></div>
-      <div class="metric-row resource"><span>${metricLabel("estimated_training_cost", "Estimated training cost")}</span><strong>${usd(cost.estimated_total_usd)}</strong></div>
-      <div class="metric-row resource"><span>${metricLabel("cost_per_execution_accuracy", "Cost / execution accuracy point")}</span><strong>${usd(costPerExecutionPoint)}</strong></div>
+      <div class="metric-row resource"><span>${metricLabel("estimated_training_cost", "Estimated training cost")}</span><strong>${money(cost.estimated_total_usd, cost.estimated_total_eur)}</strong></div>
+      <div class="metric-row resource"><span>${metricLabel("cost_per_execution_accuracy", "Cost / execution accuracy point")}</span><strong>${money(costPerExecutionPoint, eurCost(costPerExecutionPoint, cost.usd_to_eur))}</strong></div>
       <div class="metric-row resource"><span>${metricLabel("trainer_runtime", "Trainer runtime")}</span><strong>${minutesFromSeconds(trainMetrics.train_runtime)}</strong></div>
       <div class="metric-row resource"><span>${metricLabel("train_steps_per_second", "Training speed")}</span><strong>${stepsPerSecond(trainMetrics.train_steps_per_second)}</strong></div>
       <div class="metric-row resource"><span>${metricLabel("gpu_utilization", "GPU utilization mean / peak")}</span><strong>${percent(resources.gpu_utilization_mean_percent)} / ${percent(resources.gpu_utilization_peak_percent)}</strong></div>
@@ -582,6 +582,24 @@ function stepsPerSecond(value) {
 function usd(value) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) return "n/a";
   return `$${Number(value).toFixed(2)}`;
+}
+
+function eur(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return "n/a";
+  return `€${Number(value).toFixed(2)}`;
+}
+
+function money(usdValue, eurValue) {
+  if (usdValue === null || usdValue === undefined || Number.isNaN(Number(usdValue))) return "n/a";
+  return eurValue === null || eurValue === undefined || Number.isNaN(Number(eurValue))
+    ? usd(usdValue)
+    : `${usd(usdValue)} · ${eur(eurValue)}`;
+}
+
+function eurCost(usdValue, usdToEur) {
+  if (usdValue === null || usdValue === undefined || Number.isNaN(Number(usdValue))) return null;
+  if (usdToEur === null || usdToEur === undefined || Number.isNaN(Number(usdToEur))) return null;
+  return Number(usdValue) * Number(usdToEur);
 }
 
 function stepFromCheckpoint(checkpoint) {

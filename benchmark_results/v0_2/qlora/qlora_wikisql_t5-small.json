@@ -13374,6 +13374,7 @@
       "provider": "Google Cloud Vertex AI",
       "region": "europe-west4",
       "currency": "USD",
+      "display_currency": "EUR",
       "pricing_model": "on_demand",
       "cost_type": "estimated",
       "status": "complete",
@@ -13398,6 +13399,14 @@
       "boot_disk_cost_usd": 0.093593,
       "replica_count": 1,
       "estimated_total_usd": 3.379118,
+      "estimated_total_eur": 2.887642,
+      "usd_to_eur": 0.854555,
+      "exchange_rate_source": {
+        "name": "ECB euro foreign exchange reference rates",
+        "url": "https://www.ecb.europa.eu/stats/eurofxref",
+        "retrieved_at": "2026-05-03",
+        "reference_date": "2026-04-30"
+      },
       "pricing_source": {
         "name": "Google Cloud Vertex AI pricing",
         "url": "https://cloud.google.com/vertex-ai/pricing",
@@ -13406,7 +13415,8 @@
       "notes": [
         "Prices are benchmark estimates, not Cloud Billing invoices.",
         "Custom training cost is estimated as machine hours plus accelerator hours plus boot disk hours.",
-        "Real billed cost can differ because of credits, taxes, discounts, retries, storage, Artifact Registry, Cloud Build, and billing export timing."
+        "Real billed cost can differ because of credits, taxes, discounts, retries, storage, Artifact Registry, Cloud Build, and billing export timing.",
+        "EUR values are converted from USD with the fixed ECB reference rate stored in this file."
       ]
     }
   }

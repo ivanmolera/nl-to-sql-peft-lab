@@ -319,7 +319,9 @@ The script discovers matching Vertex AI Custom Jobs by `displayName`, uses
 block into both benchmark indexes and per-model result files. The estimate is
 not a Cloud Billing invoice: it is a reproducible benchmark cost derived from
 the configured infrastructure and the on-demand prices stored in
-`configs/pricing/gcp_vertex_ai_europe_west4.yaml`.
+`configs/pricing/gcp_vertex_ai_europe_west4.yaml`. Google Cloud prices are kept
+in USD, while EUR values are converted from USD with the fixed ECB reference rate
+stored in the same pricing file.
 
 ## Web App
 
@@ -337,7 +339,7 @@ The app provides:
 - A leaderboard for the selected benchmark metrics.
 - Benchmark charts for execution accuracy, SQL validity, and latency.
 - Benchmark details: sample size, calls per model, total calls, dataset split, seed, and generation limits.
-- Per-model training runtime, resource usage, and estimated Vertex AI training cost when the PEFT artifact includes those fields.
+- Per-model training runtime, resource usage, and estimated Vertex AI training cost in USD and EUR when the PEFT artifact includes those fields.
 - Runtime reproducibility details for the Docker or Cloud Run environment.
 - A WikiSQL playground where users choose a validation example, select a model, generate SQL, and compare it with the expected WikiSQL SQL.
 

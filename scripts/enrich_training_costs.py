@@ -183,11 +183,13 @@ def build_cost_estimate(
     accelerator_cost = hours * (accelerator_price or 0) * accelerator_count * replica_count
     disk_cost = hours * (disk_price or 0) * boot_disk_size_gb * replica_count
     total = machine_cost + accelerator_cost + disk_cost
+    usd_to_eur = exchange_rate(pricing, "usd_to_eur")
 
     return {
         "provider": pricing.get("provider"),
         "region": pricing.get("region") or runtime.get("region"),
         "currency": pricing.get("currency", "USD"),
+        "display_currency": pricing.get("display_currency"),
         "pricing_model": pricing.get("pricing_model", "on_demand"),
         "cost_type": "estimated",
         "status": "complete" if job is None or job.state == "JOB_STATE_SUCCEEDED" else "partial",
@@ -212,6 +214,9 @@ def build_cost_estimate(
         "boot_disk_cost_usd": round(disk_cost, 6),
         "replica_count": replica_count,
         "estimated_total_usd": round(total, 6),
+        "estimated_total_eur": round(total * usd_to_eur, 6) if usd_to_eur else None,
+        "usd_to_eur": usd_to_eur,
+        "exchange_rate_source": (pricing.get("exchange_rate") or {}).get("source"),
         "pricing_source": pricing.get("source"),
         "notes": pricing.get("notes", []),
     }
@@ -331,6 +336,11 @@ def hourly_price(pricing: dict[str, Any], section: str, key: str | None) -> floa
         if normalize_price_key(candidate) == normalized_key:
             return float(value)
     return None
+
+
+def exchange_rate(pricing: dict[str, Any], key: str) -> float | None:
+    value = (pricing.get("exchange_rate") or {}).get(key)
+    return float(value) if value is not None else None
 
 
 def normalize_price_key(value: str) -> str:

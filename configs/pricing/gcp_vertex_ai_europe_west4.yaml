@@ -1,15 +1,25 @@
 provider: Google Cloud Vertex AI
 region: europe-west4
 currency: USD
+display_currency: EUR
 pricing_model: on_demand
 source:
   name: Google Cloud Vertex AI pricing
   url: https://cloud.google.com/vertex-ai/pricing
   retrieved_at: "2026-05-03"
+exchange_rate:
+  source:
+    name: ECB euro foreign exchange reference rates
+    url: https://www.ecb.europa.eu/stats/eurofxref
+    retrieved_at: "2026-05-03"
+    reference_date: "2026-04-30"
+  eur_to_usd: 1.1702
+  usd_to_eur: 0.854555
 notes:
   - Prices are benchmark estimates, not Cloud Billing invoices.
   - Custom training cost is estimated as machine hours plus accelerator hours plus boot disk hours.
   - Real billed cost can differ because of credits, taxes, discounts, retries, storage, Artifact Registry, Cloud Build, and billing export timing.
+  - EUR values are converted from USD with the fixed ECB reference rate stored in this file.
 machine_hourly_usd:
   n1-standard-8: 0.4559976
 accelerator_hourly_usd:
