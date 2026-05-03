@@ -1,0 +1,19 @@
+provider: Google Cloud Vertex AI
+region: europe-west4
+currency: USD
+pricing_model: on_demand
+source:
+  name: Google Cloud Vertex AI pricing
+  url: https://cloud.google.com/vertex-ai/pricing
+  retrieved_at: "2026-05-03"
+notes:
+  - Prices are benchmark estimates, not Cloud Billing invoices.
+  - Custom training cost is estimated as machine hours plus accelerator hours plus boot disk hours.
+  - Real billed cost can differ because of credits, taxes, discounts, retries, storage, Artifact Registry, Cloud Build, and billing export timing.
+machine_hourly_usd:
+  n1-standard-8: 0.4559976
+accelerator_hourly_usd:
+  NVIDIA_TESLA_T4: 0.525
+disk_hourly_usd_per_gb:
+  pd-ssd: 0.000279452
+  pd-standard: 0.000065753

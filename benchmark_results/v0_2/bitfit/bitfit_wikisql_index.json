@@ -1229,9 +1229,9 @@
         },
         {
           "example_index": 27,
-          "question": "What is the district when prevailing types, % is acer negundo — 30.22 tilia — 18.6 poplar — 15.23?",
+          "question": "What is the district when prevailing types, % is acer negundo \u2014 30.22 tilia \u2014 18.6 poplar \u2014 15.23?",
           "prediction": "SQL:",
-          "reference": "SELECT \"District\" FROM table WHERE \"Prevailing types, %\" = 'Acer negundo — 30.22 Tilia — 18.6 Poplar — 15.23'",
+          "reference": "SELECT \"District\" FROM table WHERE \"Prevailing types, %\" = 'Acer negundo \u2014 30.22 Tilia \u2014 18.6 Poplar \u2014 15.23'",
           "exact_match": false,
           "valid_sql": false,
           "execution_match": false,
@@ -1242,9 +1242,9 @@
         },
         {
           "example_index": 35,
-          "question": " what's the aggregate where 1st leg is 3–2",
-          "prediction": "Question: What's the aggregate where 1st leg is 3–2 SQL:",
-          "reference": "SELECT \"Aggregate\" FROM table WHERE \"1st leg\" = '3–2'",
+          "question": " what's the\u00a0aggregate\u00a0where\u00a01st leg\u00a0is 3\u20132",
+          "prediction": "Question: What's the aggregate where 1st leg is 3\u20132 SQL:",
+          "reference": "SELECT \"Aggregate\" FROM table WHERE \"1st leg\" = '3\u20132'",
           "exact_match": false,
           "valid_sql": false,
           "execution_match": false,
@@ -1308,8 +1308,8 @@
         {
           "example_index": 58,
           "question": "Name the total number of percentage growth 2000-2008 of uganda?",
-          "prediction": "% growth (2000–2008) (real) | Internet subscriptions (2008) (thousands of users) (real) | % growth (2000–2008) (real) | % Internet users (real) Question: Name the total number of percentage growth 2000-2008 of uganda?",
-          "reference": "SELECT COUNT(\"% growth (2000–2008)\") FROM table WHERE \"Nation\" = 'Uganda'",
+          "prediction": "% growth (2000\u20132008) (real) | Internet subscriptions (2008) (thousands of users) (real) | % growth (2000\u20132008) (real) | % Internet users (real) Question: Name the total number of percentage growth 2000-2008 of uganda?",
+          "reference": "SELECT COUNT(\"% growth (2000\u20132008)\") FROM table WHERE \"Nation\" = 'Uganda'",
           "exact_match": false,
           "valid_sql": false,
           "execution_match": false,
@@ -1333,7 +1333,7 @@
         },
         {
           "example_index": 96,
-          "question": "what's the actor with character being judge joseph ratner",
+          "question": "what's the\u00a0actor\u00a0with\u00a0character\u00a0being judge joseph ratner",
           "prediction": "question: what's the actor with character being judge joseph ratner?",
           "reference": "SELECT \"Actor\" FROM table WHERE \"Character\" = 'Judge Joseph Ratner'",
           "exact_match": false,
@@ -1372,7 +1372,7 @@
         },
         {
           "example_index": 128,
-          "question": " what's the title where original air date is january18,2009",
+          "question": " what's the\u00a0title\u00a0where\u00a0original air date\u00a0is january18,2009",
           "prediction": "Question: What's the title where original air date is january18,2009 SQL:",
           "reference": "SELECT \"Title\" FROM table WHERE \"Original air date\" = 'January18,2009'",
           "exact_match": false,
@@ -1503,6 +1503,45 @@
             "train_samples_per_second": 42.105,
             "train_steps_per_second": 2.632
           }
+        },
+        "cost_estimate": {
+          "provider": "Google Cloud Vertex AI",
+          "region": "europe-west4",
+          "currency": "USD",
+          "pricing_model": "on_demand",
+          "cost_type": "estimated",
+          "status": "complete",
+          "job_name": "projects/915641329923/locations/europe-west4/customJobs/3626797240896454656",
+          "job_display_name": "t5-small-wikisql-bitfit-early-stopping-v0-2",
+          "job_state": "JOB_STATE_SUCCEEDED",
+          "job_start_time": "2026-05-01T16:27:25Z",
+          "job_end_time": "2026-05-01T20:16:28Z",
+          "duration_source": "vertex_ai_job_time",
+          "billable_duration_seconds": 13743.0,
+          "billable_duration_hours": 3.8175,
+          "machine_type": "n1-standard-8",
+          "machine_hourly_usd": 0.4559976,
+          "machine_cost_usd": 1.740771,
+          "accelerator_type": "NVIDIA_TESLA_T4",
+          "accelerator_count": 1,
+          "accelerator_hourly_usd": 0.525,
+          "accelerator_cost_usd": 2.004188,
+          "boot_disk_type": "pd-ssd",
+          "boot_disk_size_gb": 100,
+          "boot_disk_hourly_usd_per_gb": 0.000279452,
+          "boot_disk_cost_usd": 0.106681,
+          "replica_count": 1,
+          "estimated_total_usd": 3.851639,
+          "pricing_source": {
+            "name": "Google Cloud Vertex AI pricing",
+            "url": "https://cloud.google.com/vertex-ai/pricing",
+            "retrieved_at": "2026-05-03"
+          },
+          "notes": [
+            "Prices are benchmark estimates, not Cloud Billing invoices.",
+            "Custom training cost is estimated as machine hours plus accelerator hours plus boot disk hours.",
+            "Real billed cost can differ because of credits, taxes, discounts, retries, storage, Artifact Registry, Cloud Build, and billing export timing."
+          ]
         }
       },
       "result_file": "benchmark_results/v0_2/bitfit/bitfit_wikisql_t5-small.json"
@@ -1680,9 +1719,9 @@
         },
         {
           "example_index": 5344,
-          "question": "what is the mountain peak when the location is 37.5775°n 105.4856°w?",
-          "prediction": "SELECT * FROM table WHERE location = '37.5775°n 105.4856°w'",
-          "reference": "SELECT \"Mountain Peak\" FROM table WHERE \"Location\" = '37.5775°n 105.4856°w'",
+          "question": "what is the mountain peak when the location is 37.5775\u00b0n 105.4856\u00b0w?",
+          "prediction": "SELECT * FROM table WHERE location = '37.5775\u00b0n 105.4856\u00b0w'",
+          "reference": "SELECT \"Mountain Peak\" FROM table WHERE \"Location\" = '37.5775\u00b0n 105.4856\u00b0w'",
           "exact_match": false,
           "valid_sql": true,
           "execution_match": true,
@@ -1732,9 +1771,9 @@
         },
         {
           "example_index": 27,
-          "question": "What is the district when prevailing types, % is acer negundo — 30.22 tilia — 18.6 poplar — 15.23?",
+          "question": "What is the district when prevailing types, % is acer negundo \u2014 30.22 tilia \u2014 18.6 poplar \u2014 15.23?",
           "prediction": "SELECT District, TotalAmountOfTrees, PrevailingTypes, AmountOfOldTrees, AmountOfTrees, % (2022-01-01) as AmountOfTrees, % (2022-01-01) as AmountOfTrees, AVG(AmountOfTrees) as AverageTrees, AVG(AmountOfTrees) as AverageTrees, AVG(AmountOfTrees) as AverageTrees, AVG(AmountOfTrees",
-          "reference": "SELECT \"District\" FROM table WHERE \"Prevailing types, %\" = 'Acer negundo — 30.22 Tilia — 18.6 Poplar — 15.23'",
+          "reference": "SELECT \"District\" FROM table WHERE \"Prevailing types, %\" = 'Acer negundo \u2014 30.22 Tilia \u2014 18.6 Poplar \u2014 15.23'",
           "exact_match": false,
           "valid_sql": false,
           "execution_match": false,
@@ -1745,9 +1784,9 @@
         },
         {
           "example_index": 35,
-          "question": " what's the aggregate where 1st leg is 3–2",
+          "question": " what's the\u00a0aggregate\u00a0where\u00a01st leg\u00a0is 3\u20132",
           "prediction": "SELECT AVG(1st_leg_round) AS Aggregate_1st_leg_round, AVG(competition_round) AS Aggregate_competition_round, AVG(round_round) AS Aggregate_round, AVG(opponents_round) AS Aggregate_opponents_round, AVG(1st_leg_round) AS Aggregate_1st_leg_round, AVG(round_round",
-          "reference": "SELECT \"Aggregate\" FROM table WHERE \"1st leg\" = '3–2'",
+          "reference": "SELECT \"Aggregate\" FROM table WHERE \"1st leg\" = '3\u20132'",
           "exact_match": false,
           "valid_sql": false,
           "execution_match": false,
@@ -1812,7 +1851,7 @@
           "example_index": 58,
           "question": "Name the total number of percentage growth 2000-2008 of uganda?",
           "prediction": "SELECT * FROM table WHERE population > 2000 AND population < 2008",
-          "reference": "SELECT COUNT(\"% growth (2000–2008)\") FROM table WHERE \"Nation\" = 'Uganda'",
+          "reference": "SELECT COUNT(\"% growth (2000\u20132008)\") FROM table WHERE \"Nation\" = 'Uganda'",
           "exact_match": false,
           "valid_sql": false,
           "execution_match": false,
@@ -1872,6 +1911,45 @@
             "train_samples_per_second": 190.363,
             "train_steps_per_second": 11.9
           }
+        },
+        "cost_estimate": {
+          "provider": "Google Cloud Vertex AI",
+          "region": "europe-west4",
+          "currency": "USD",
+          "pricing_model": "on_demand",
+          "cost_type": "estimated",
+          "status": "complete",
+          "job_name": "projects/915641329923/locations/europe-west4/customJobs/5038407443239927808",
+          "job_display_name": "smollm2-wikisql-bitfit-early-stopping-v0-2",
+          "job_state": "JOB_STATE_SUCCEEDED",
+          "job_start_time": "2026-05-02T04:28:39Z",
+          "job_end_time": "2026-05-02T06:03:03Z",
+          "duration_source": "vertex_ai_job_time",
+          "billable_duration_seconds": 5664.0,
+          "billable_duration_hours": 1.573333,
+          "machine_type": "n1-standard-8",
+          "machine_hourly_usd": 0.4559976,
+          "machine_cost_usd": 0.717436,
+          "accelerator_type": "NVIDIA_TESLA_T4",
+          "accelerator_count": 1,
+          "accelerator_hourly_usd": 0.525,
+          "accelerator_cost_usd": 0.826,
+          "boot_disk_type": "pd-ssd",
+          "boot_disk_size_gb": 100,
+          "boot_disk_hourly_usd_per_gb": 0.000279452,
+          "boot_disk_cost_usd": 0.043967,
+          "replica_count": 1,
+          "estimated_total_usd": 1.587403,
+          "pricing_source": {
+            "name": "Google Cloud Vertex AI pricing",
+            "url": "https://cloud.google.com/vertex-ai/pricing",
+            "retrieved_at": "2026-05-03"
+          },
+          "notes": [
+            "Prices are benchmark estimates, not Cloud Billing invoices.",
+            "Custom training cost is estimated as machine hours plus accelerator hours plus boot disk hours.",
+            "Real billed cost can differ because of credits, taxes, discounts, retries, storage, Artifact Registry, Cloud Build, and billing export timing."
+          ]
         }
       },
       "result_file": "benchmark_results/v0_2/bitfit/bitfit_wikisql_smollm2-135m-instruct.json"
@@ -1971,9 +2049,9 @@
         },
         {
           "example_index": 27,
-          "question": "What is the district when prevailing types, % is acer negundo — 30.22 tilia — 18.6 poplar — 15.23?",
+          "question": "What is the district when prevailing types, % is acer negundo \u2014 30.22 tilia \u2014 18.6 poplar \u2014 15.23?",
           "prediction": "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
-          "reference": "SELECT \"District\" FROM table WHERE \"Prevailing types, %\" = 'Acer negundo — 30.22 Tilia — 18.6 Poplar — 15.23'",
+          "reference": "SELECT \"District\" FROM table WHERE \"Prevailing types, %\" = 'Acer negundo \u2014 30.22 Tilia \u2014 18.6 Poplar \u2014 15.23'",
           "exact_match": false,
           "valid_sql": false,
           "execution_match": false,
@@ -1984,9 +2062,9 @@
         },
         {
           "example_index": 35,
-          "question": " what's the aggregate where 1st leg is 3–2",
+          "question": " what's the\u00a0aggregate\u00a0where\u00a01st leg\u00a0is 3\u20132",
           "prediction": "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
-          "reference": "SELECT \"Aggregate\" FROM table WHERE \"1st leg\" = '3–2'",
+          "reference": "SELECT \"Aggregate\" FROM table WHERE \"1st leg\" = '3\u20132'",
           "exact_match": false,
           "valid_sql": false,
           "execution_match": false,
@@ -2051,7 +2129,7 @@
           "example_index": 58,
           "question": "Name the total number of percentage growth 2000-2008 of uganda?",
           "prediction": "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
-          "reference": "SELECT COUNT(\"% growth (2000–2008)\") FROM table WHERE \"Nation\" = 'Uganda'",
+          "reference": "SELECT COUNT(\"% growth (2000\u20132008)\") FROM table WHERE \"Nation\" = 'Uganda'",
           "exact_match": false,
           "valid_sql": false,
           "execution_match": false,
@@ -2075,7 +2153,7 @@
         },
         {
           "example_index": 96,
-          "question": "what's the actor with character being judge joseph ratner",
+          "question": "what's the\u00a0actor\u00a0with\u00a0character\u00a0being judge joseph ratner",
           "prediction": "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
           "reference": "SELECT \"Actor\" FROM table WHERE \"Character\" = 'Judge Joseph Ratner'",
           "exact_match": false,
@@ -2114,7 +2192,7 @@
         },
         {
           "example_index": 128,
-          "question": " what's the title where original air date is january18,2009",
+          "question": " what's the\u00a0title\u00a0where\u00a0original air date\u00a0is january18,2009",
           "prediction": "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
           "reference": "SELECT \"Title\" FROM table WHERE \"Original air date\" = 'January18,2009'",
           "exact_match": false,
@@ -2241,6 +2319,45 @@
             "train_samples_per_second": 66.635,
             "train_steps_per_second": 4.166
           }
+        },
+        "cost_estimate": {
+          "provider": "Google Cloud Vertex AI",
+          "region": "europe-west4",
+          "currency": "USD",
+          "pricing_model": "on_demand",
+          "cost_type": "estimated",
+          "status": "complete",
+          "job_name": "projects/915641329923/locations/europe-west4/customJobs/2279389721522077696",
+          "job_display_name": "qwen2-5-wikisql-bitfit-early-stopping-v0-2",
+          "job_state": "JOB_STATE_SUCCEEDED",
+          "job_start_time": "2026-05-02T07:39:45Z",
+          "job_end_time": "2026-05-02T10:49:07Z",
+          "duration_source": "vertex_ai_job_time",
+          "billable_duration_seconds": 11362.0,
+          "billable_duration_hours": 3.156111,
+          "machine_type": "n1-standard-8",
+          "machine_hourly_usd": 0.4559976,
+          "machine_cost_usd": 1.439179,
+          "accelerator_type": "NVIDIA_TESLA_T4",
+          "accelerator_count": 1,
+          "accelerator_hourly_usd": 0.525,
+          "accelerator_cost_usd": 1.656958,
+          "boot_disk_type": "pd-ssd",
+          "boot_disk_size_gb": 100,
+          "boot_disk_hourly_usd_per_gb": 0.000279452,
+          "boot_disk_cost_usd": 0.088198,
+          "replica_count": 1,
+          "estimated_total_usd": 3.184336,
+          "pricing_source": {
+            "name": "Google Cloud Vertex AI pricing",
+            "url": "https://cloud.google.com/vertex-ai/pricing",
+            "retrieved_at": "2026-05-03"
+          },
+          "notes": [
+            "Prices are benchmark estimates, not Cloud Billing invoices.",
+            "Custom training cost is estimated as machine hours plus accelerator hours plus boot disk hours.",
+            "Real billed cost can differ because of credits, taxes, discounts, retries, storage, Artifact Registry, Cloud Build, and billing export timing."
+          ]
         }
       },
       "result_file": "benchmark_results/v0_2/bitfit/bitfit_wikisql_qwen2-5-coder-0-5b-instruct.json"

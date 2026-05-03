@@ -50,6 +50,8 @@ const METRIC_DEFINITIONS = {
   training_time: "External wall-clock measurement around the training loop, collected by the project resource monitor. It is used together with CPU, GPU, and RAM sampling.",
   trainer_runtime: "Internal Hugging Face Trainer train_runtime metric for trainer.train(). It should be close to wall time, but comes from the Trainer logs rather than the external resource monitor.",
   train_steps_per_second: "Training throughput reported by Hugging Face Trainer as optimizer steps completed per second. This is speed, not total steps.",
+  estimated_training_cost: "Estimated Vertex AI custom training cost for this run, based on job duration, machine type, GPU count, boot disk, and the versioned pricing table in the repository. It is not a Cloud Billing invoice.",
+  cost_per_execution_accuracy: "Estimated training cost divided by execution accuracy percentage points. Lower means more execution accuracy per training dollar.",
   cpu_utilization: "Estimated process CPU utilization during fine-tuning, normalized by available CPU cores.",
   gpu_utilization: "Mean and peak GPU utilization sampled with nvidia-smi during fine-tuning.",
   gpu_memory: "Mean and peak GPU memory allocated during fine-tuning, sampled from the training GPU.",
@@ -190,7 +192,7 @@ async function loadBenchmarks() {
           ${renderParameterProfile(model, trainerMetrics, mode)}
           ${hasTrainerMetrics ? renderTrainerMetrics(trainerMetrics) : ""}
           ${renderBenchmarkMetrics(metrics)}
-          ${hasTrainerMetrics ? renderTrainingResources(trainerMetrics) : ""}
+          ${hasTrainerMetrics ? renderTrainingResources(trainerMetrics, model.training, metrics) : ""}
         </article>
       `;
     })
@@ -371,12 +373,16 @@ function renderTrainerMetrics(metrics) {
     .join("");
 }
 
-function renderTrainingResources(metrics) {
+function renderTrainingResources(metrics, training = {}, benchmarkMetrics = {}) {
   const trainMetrics = metrics.train_metrics || {};
   const resources = metrics.resource_metrics || {};
+  const cost = training.cost_estimate || {};
   if (!Object.keys(trainMetrics).length && !Object.keys(resources).length) {
     return "";
   }
+  const costPerExecutionPoint = cost.estimated_total_usd !== undefined && benchmarkMetrics.execution_accuracy
+    ? Number(cost.estimated_total_usd) / (Number(benchmarkMetrics.execution_accuracy) * 100)
+    : null;
   return `
     <div class="resource-block">
       <h4>Training Runtime & Resources</h4>
@@ -384,6 +390,8 @@ function renderTrainingResources(metrics) {
       <div class="metric-row resource"><span>${metricLabel("best_step", "Best eval-loss step")}</span><strong>${integer(stepFromCheckpoint(metrics.best_model_checkpoint) ?? metrics.global_step)}</strong></div>
       <div class="metric-row resource"><span>${metricLabel("best_metric", "Best eval loss")}</span><strong>${number(metrics.best_metric ?? metrics.eval_loss)}</strong></div>
       <div class="metric-row resource"><span>${metricLabel("training_time", "Fine-tuning wall time")}</span><strong>${minutes(resources.training_wall_time_minutes)}</strong></div>
+      <div class="metric-row resource"><span>${metricLabel("estimated_training_cost", "Estimated training cost")}</span><strong>${usd(cost.estimated_total_usd)}</strong></div>
+      <div class="metric-row resource"><span>${metricLabel("cost_per_execution_accuracy", "Cost / execution accuracy point")}</span><strong>${usd(costPerExecutionPoint)}</strong></div>
       <div class="metric-row resource"><span>${metricLabel("trainer_runtime", "Trainer runtime")}</span><strong>${minutesFromSeconds(trainMetrics.train_runtime)}</strong></div>
       <div class="metric-row resource"><span>${metricLabel("train_steps_per_second", "Training speed")}</span><strong>${stepsPerSecond(trainMetrics.train_steps_per_second)}</strong></div>
       <div class="metric-row resource"><span>${metricLabel("gpu_utilization", "GPU utilization mean / peak")}</span><strong>${percent(resources.gpu_utilization_mean_percent)} / ${percent(resources.gpu_utilization_peak_percent)}</strong></div>
@@ -572,6 +580,11 @@ function parameterPercent(value) {
 function stepsPerSecond(value) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) return "n/a";
   return `${Number(value).toFixed(3)} steps/s`;
+}
+
+function usd(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return "n/a";
+  return `$${Number(value).toFixed(2)}`;
 }
 
 function stepFromCheckpoint(checkpoint) {

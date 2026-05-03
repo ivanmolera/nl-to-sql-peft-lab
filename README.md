@@ -285,6 +285,7 @@ The benchmark records per-example predictions and aggregated metrics:
 - Evaluation latency
 - Throughput
 - Model parameter metadata: total base-model parameters, fine-tuned/trainable parameters, and trainable-parameter percentage when available from the training artifact.
+- Estimated Vertex AI training cost per `model + PEFT` run, based on job duration, machine type, accelerator count, boot disk, and the versioned pricing table in `configs/pricing/`.
 - Runtime metadata: Docker image, platform, Python, PyTorch, CUDA/device, CPU and RAM.
 - Benchmark metadata: task, dataset split, sample size, calls per model, total model calls, sampling seed, prompt length, generation limits, and metric definitions.
 
@@ -306,6 +307,19 @@ python -m peft_lab.benchmark_zero_shot \
   --model-id t5-small
 ```
 
+Enrich completed PEFT benchmark artifacts with reproducible Vertex AI cost estimates:
+
+```bash
+python scripts/enrich_training_costs.py --discover-vertex-jobs
+```
+
+The script discovers matching Vertex AI Custom Jobs by `displayName`, uses
+`startTime` and `endTime` when available, and writes a `training.cost_estimate`
+block into both benchmark indexes and per-model result files. The estimate is
+not a Cloud Billing invoice: it is a reproducible benchmark cost derived from
+the configured infrastructure and the on-demand prices stored in
+`configs/pricing/gcp_vertex_ai_europe_west4.yaml`.
+
 ## Web App
 
 Run the interactive baseline app from the ML image:
@@ -322,6 +336,7 @@ The app provides:
 - A leaderboard for the selected benchmark metrics.
 - Benchmark charts for execution accuracy, SQL validity, and latency.
 - Benchmark details: sample size, calls per model, total calls, dataset split, seed, and generation limits.
+- Per-model training runtime, resource usage, and estimated Vertex AI training cost when the PEFT artifact includes those fields.
 - Runtime reproducibility details for the Docker or Cloud Run environment.
 - A WikiSQL playground where users choose a validation example, select a model, generate SQL, and compare it with the expected WikiSQL SQL.
 
