@@ -47,6 +47,16 @@ FINE_TUNED_MODEL_SPECS = [
         "adapter_type": "peft",
     },
     {
+        "id": "qwen2-5-qlora",
+        "name": "Qwen/Qwen2.5-Coder-0.5B-Instruct + QLoRA",
+        "architecture": "causal",
+        "role": "Qwen2.5-Coder-0.5B fine-tuned on WikiSQL with QLoRA",
+        "base_model_name": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+        "adapter_path": ROOT_DIR / "model_artifacts" / "qlora" / "qwen2-5-wikisql-qlora" / "adapter",
+        "peft_method": "qlora",
+        "adapter_type": "peft",
+    },
+    {
         "id": "t5-small-bitfit",
         "name": "google-t5/t5-small + BitFit",
         "architecture": "seq2seq",
