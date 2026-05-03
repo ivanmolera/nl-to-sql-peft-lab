@@ -118,31 +118,31 @@ def sync_model_result_files(index_path: Path, payload: dict[str, Any], dry_run: 
         result_file = model.get("result_file")
         if not cost or not result_file:
             continue
-        result_path = resolve_result_path(index_path, result_file)
-        if not result_path.exists():
-            continue
-        result_payload = json.loads(result_path.read_text(encoding="utf-8"))
-        training = result_payload.setdefault("training", {})
-        if training.get("cost_estimate") == cost:
-            continue
-        training["cost_estimate"] = cost
-        changed = True
-        if dry_run:
-            print(f"Would update {relative(result_path)}")
-        else:
-            result_path.write_text(json.dumps(result_payload, indent=2) + "\n", encoding="utf-8")
-            print(f"Updated {relative(result_path)}")
+        for result_path in resolve_result_paths(index_path, result_file):
+            result_payload = json.loads(result_path.read_text(encoding="utf-8"))
+            training = result_payload.setdefault("training", {})
+            if training.get("cost_estimate") == cost:
+                continue
+            training["cost_estimate"] = cost
+            changed = True
+            if dry_run:
+                print(f"Would update {relative(result_path)}")
+            else:
+                result_path.write_text(json.dumps(result_payload, indent=2) + "\n", encoding="utf-8")
+                print(f"Updated {relative(result_path)}")
     return changed
 
 
-def resolve_result_path(index_path: Path, result_file: str) -> Path:
+def resolve_result_paths(index_path: Path, result_file: str) -> list[Path]:
     path = Path(result_file)
     if path.is_absolute():
-        return path
-    root_candidate = ROOT_DIR / path
-    if root_candidate.exists():
-        return root_candidate
-    return index_path.parent / path.name
+        return [path] if path.exists() else []
+    candidates = [ROOT_DIR / path, index_path.parent / path.name]
+    existing: list[Path] = []
+    for candidate in candidates:
+        if candidate.exists() and candidate not in existing:
+            existing.append(candidate)
+    return existing
 
 
 def build_cost_estimate(

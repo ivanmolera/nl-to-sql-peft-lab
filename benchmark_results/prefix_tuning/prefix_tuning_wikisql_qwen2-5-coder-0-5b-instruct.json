@@ -13365,6 +13365,45 @@
         "train_samples_per_second": 66.005,
         "train_steps_per_second": 4.126
       }
+    },
+    "cost_estimate": {
+      "provider": "Google Cloud Vertex AI",
+      "region": "europe-west4",
+      "currency": "USD",
+      "pricing_model": "on_demand",
+      "cost_type": "estimated",
+      "status": "complete",
+      "job_name": "projects/915641329923/locations/europe-west4/customJobs/6891075739949465600",
+      "job_display_name": "qwen2-5-wikisql-prefix-tuning-early-stopping-v0-2",
+      "job_state": "JOB_STATE_SUCCEEDED",
+      "job_start_time": "2026-05-02T10:51:21Z",
+      "job_end_time": "2026-05-02T14:01:44Z",
+      "duration_source": "vertex_ai_job_time",
+      "billable_duration_seconds": 11423.0,
+      "billable_duration_hours": 3.173056,
+      "machine_type": "n1-standard-8",
+      "machine_hourly_usd": 0.4559976,
+      "machine_cost_usd": 1.446906,
+      "accelerator_type": "NVIDIA_TESLA_T4",
+      "accelerator_count": 1,
+      "accelerator_hourly_usd": 0.525,
+      "accelerator_cost_usd": 1.665854,
+      "boot_disk_type": "pd-ssd",
+      "boot_disk_size_gb": 100,
+      "boot_disk_hourly_usd_per_gb": 0.000279452,
+      "boot_disk_cost_usd": 0.088672,
+      "replica_count": 1,
+      "estimated_total_usd": 3.201432,
+      "pricing_source": {
+        "name": "Google Cloud Vertex AI pricing",
+        "url": "https://cloud.google.com/vertex-ai/pricing",
+        "retrieved_at": "2026-05-03"
+      },
+      "notes": [
+        "Prices are benchmark estimates, not Cloud Billing invoices.",
+        "Custom training cost is estimated as machine hours plus accelerator hours plus boot disk hours.",
+        "Real billed cost can differ because of credits, taxes, discounts, retries, storage, Artifact Registry, Cloud Build, and billing export timing."
+      ]
     }
   }
 }
