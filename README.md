@@ -229,6 +229,7 @@ python -m peft_lab.evaluate_zero_shot --config configs/zero_shot_wikisql_baselin
 This evaluates:
 
 - `google-t5/t5-small`
+- `openai-community/gpt2`
 - `HuggingFaceTB/SmolLM2-135M-Instruct`
 - `Qwen/Qwen2.5-Coder-0.5B-Instruct`
 
@@ -360,6 +361,7 @@ outputs/                 Local model/adapters/results output directory
 Models:
 
 - [`google-t5/t5-small`](https://huggingface.co/google-t5/t5-small): T5-small, 60M parameters, encoder-decoder text-to-text baseline.
+- [`openai-community/gpt2`](https://huggingface.co/openai-community/gpt2): GPT-2 small, 124M parameter decoder-only causal language model used as an additional non-instruct baseline.
 - [`HuggingFaceTB/SmolLM2-135M-Instruct`](https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct): 135M parameter decoder-only instruct model.
 - [`Qwen/Qwen2.5-Coder-0.5B-Instruct`](https://huggingface.co/Qwen/Qwen2.5-Coder-0.5B-Instruct): 0.49B parameter decoder-only code model.
 
@@ -379,6 +381,7 @@ PEFT techniques:
 - Carrasco Martinez, Antoni, and Molera Gomez, Ivan. Master's Final Project in
   Artificial Intelligence, UNIR: https://reunir.unir.net/handle/123456789/19416
 - T5-small model card: https://huggingface.co/google-t5/t5-small
+- GPT-2 model card: https://huggingface.co/openai-community/gpt2
 - SmolLM2-135M-Instruct model card: https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct
 - Qwen2.5-Coder-0.5B-Instruct model card: https://huggingface.co/Qwen/Qwen2.5-Coder-0.5B-Instruct
 - WikiSQL dataset card: https://huggingface.co/datasets/Salesforce/wikisql
