@@ -136,6 +136,16 @@ FINE_TUNED_MODEL_SPECS = [
         "peft_method": "ia3",
         "adapter_type": "peft",
     },
+    {
+        "id": "smollm2-ia3",
+        "name": "HuggingFaceTB/SmolLM2-135M-Instruct + IA3",
+        "architecture": "causal",
+        "role": "SmolLM2-135M fine-tuned on WikiSQL with IA3",
+        "base_model_name": "HuggingFaceTB/SmolLM2-135M-Instruct",
+        "adapter_path": ROOT_DIR / "model_artifacts" / "ia3" / "smollm2-wikisql-ia3" / "adapter",
+        "peft_method": "ia3",
+        "adapter_type": "peft",
+    },
 ]
 
 app = FastAPI(title="NL-to-SQL PEFT Lab ML API", version="0.1.2")
