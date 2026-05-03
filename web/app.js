@@ -29,6 +29,7 @@ const els = {
   chartExec: document.querySelector("#chart-exec"),
   chartValid: document.querySelector("#chart-valid"),
   chartLatency: document.querySelector("#chart-latency"),
+  analysisTitle: document.querySelector("#analysis-title"),
   benchmarkSummary: document.querySelector("#benchmark-summary"),
   benchmarkGrid: document.querySelector("#benchmark-grid"),
   runtimeSummary: document.querySelector("#runtime-summary"),
@@ -109,6 +110,12 @@ function shortName(name) {
   return name.split("/").pop();
 }
 
+function displayModelName(model) {
+  const rawName = model.base_model_name || model.base_model_id || model.name || model.id || "";
+  const baseName = rawName.replace(/\s+\+\s+(QLoRA|BitFit|Prefix Tuning|IA3)$/i, "");
+  return shortName(baseName);
+}
+
 async function loadBenchmarkModes() {
   const data = await api("/api/benchmark-modes");
   els.modeTabs.innerHTML = data.modes
@@ -141,6 +148,7 @@ async function loadBenchmarks() {
   const mode = state.selectedMode || "zero-shot";
   const data = await api(`/api/benchmarks?mode=${encodeURIComponent(mode)}`);
   els.selectedModeLabel.textContent = data.label || "Benchmark run";
+  els.analysisTitle.textContent = `Comparative Analysis (${data.label || "Benchmark run"})`;
   els.modeDescription.textContent = data.available
     ? data.description || ""
     : `${data.description || ""} · results pending`;
@@ -181,7 +189,7 @@ async function loadBenchmarks() {
         <article class="model-card">
           <header>
             <div>
-              <h2>${shortName(model.name)}</h2>
+              <h2>${displayModelName(model)}</h2>
               <small>${model.role}</small>
             </div>
             <div class="score">${score}</div>
@@ -423,7 +431,7 @@ function renderChart(target, models, metric, formatter) {
       const value = model.metrics[metric] || 0;
       return `
         <div class="bar-row">
-          <div class="bar-label" title="${model.name}">${shortName(model.name)}</div>
+          <div class="bar-label" title="${escapeAttr(model.name)}">${displayModelName(model)}</div>
           <div class="bar-track"><div class="bar-fill" style="width:${Math.max(2, value * 100)}%"></div></div>
           <strong>${formatter(value)}</strong>
         </div>
@@ -446,7 +454,7 @@ function renderLatencyChart(target, models) {
       const width = Math.max(2, (value / maxLatency) * 100);
       return `
         <div class="bar-row">
-          <div class="bar-label" title="${model.name}">${shortName(model.name)}</div>
+          <div class="bar-label" title="${escapeAttr(model.name)}">${displayModelName(model)}</div>
           <div class="bar-track"><div class="bar-fill" style="width:${width}%"></div></div>
           <strong>${milliseconds(value)}</strong>
         </div>
@@ -651,7 +659,7 @@ async function loadModels() {
 function renderModelOptions() {
   const models = sortModelsByParameters(liveModelsForSelectedMode());
   els.modelSelect.innerHTML = models
-    .map((model) => `<option value="${model.id}">${shortName(model.name)}</option>`)
+    .map((model) => `<option value="${model.id}">${displayModelName(model)}</option>`)
     .join("");
   els.modelSelect.disabled = models.length === 0;
   els.run.disabled = models.length === 0;
@@ -741,7 +749,7 @@ async function runGeneration() {
 
     els.prediction.textContent = result.prediction || "-- No output";
     els.reference.textContent = result.reference;
-    els.runMeta.textContent = `${shortName(result.model.name)} · ${seconds(result.latency_seconds)}`;
+    els.runMeta.textContent = `${displayModelName(result.model)} · ${seconds(result.latency_seconds)}`;
 
     const ok = result.execution_match;
     els.verdict.textContent = ok ? "Match" : "Mismatch";
