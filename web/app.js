@@ -65,8 +65,8 @@ const METRIC_DEFINITIONS = {
 const MODEL_PARAMETER_COUNTS = {
   "t5-small": 60_506_624,
   "google-t5/t5-small": 60_506_624,
-  "gpt2": 124_000_000,
-  "openai-community/gpt2": 124_000_000,
+  "gpt2": 124_439_808,
+  "openai-community/gpt2": 124_439_808,
   "smollm2-135m-instruct": 135_000_000,
   "HuggingFaceTB/SmolLM2-135M-Instruct": 135_000_000,
   "qwen2.5-coder-0.5b-instruct": 500_000_000,
@@ -79,6 +79,16 @@ const TRAINABLE_PARAMETER_FALLBACKS = {
     bitfit: 512,
     "prefix-tuning": 983_040,
     ia3: 43_008,
+  },
+  "smollm2-135m-instruct": {
+    qlora: 921_600,
+    bitfit: 0,
+    "prefix-tuning": 230_400,
+  },
+  "qwen2.5-coder-0.5b-instruct": {
+    qlora: 1_081_344,
+    bitfit: 27_648,
+    "prefix-tuning": 122_880,
   },
 };
 
@@ -256,10 +266,13 @@ function renderParameterProfile(model, trainerMetrics, mode) {
 
 function parameterProfileForModel(model, trainerMetrics, mode) {
   const parameterMetrics = trainerMetrics?.parameter_metrics || {};
+  const catalogTotal = parameterCount(model);
+  const artifactTotal = parameterMetrics.total_parameters
+    ?? model.parameter_metrics?.total_parameters;
   const totalParameters = Number(
-    parameterMetrics.total_parameters
-    ?? model.parameter_metrics?.total_parameters
-    ?? parameterCount(model),
+    catalogTotal !== Number.MAX_SAFE_INTEGER
+      ? catalogTotal
+      : artifactTotal ?? 0,
   );
   const trainerTrainable = parameterMetrics.trainable_parameters
     ?? model.parameter_metrics?.trainable_parameters;
@@ -269,8 +282,9 @@ function parameterProfileForModel(model, trainerMetrics, mode) {
     return {
       totalParameters,
       trainableParameters,
-      trainableRatio: parameterMetrics.trainable_parameter_ratio
-        ?? (totalParameters ? trainableParameters / totalParameters : 0),
+      trainableRatio: totalParameters
+        ? trainableParameters / totalParameters
+        : parameterMetrics.trainable_parameter_ratio ?? 0,
       source: "trainer",
     };
   }
@@ -340,7 +354,7 @@ function parameterCount(model) {
   const text = candidates.filter(Boolean).join(" ").toLowerCase();
   if (text.includes("qwen2.5")) return 500_000_000;
   if (text.includes("smollm2")) return 135_000_000;
-  if (text.includes("gpt2")) return 124_000_000;
+  if (text.includes("gpt2")) return 124_439_808;
   if (text.includes("t5-small")) return 60_506_624;
   return Number.MAX_SAFE_INTEGER;
 }
