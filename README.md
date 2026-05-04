@@ -23,6 +23,29 @@ latency, BLEU, ROUGE-L, and Token F1, while also allowing users to generate SQL 
 selected WikiSQL natural-language questions using either base models or available
 fine-tuned PEFT adapters.
 
+## Web App Screenshots
+
+The dashboard compares PEFT techniques across the selected small model suite and
+shows both benchmark quality metrics and training runtime/resource information.
+
+![Comparative analysis dashboard](docs/images/comparative-analysis.png)
+
+Benchmark detail panels document the evaluation setup, sample size, runner,
+framework, generation settings, and reproducible runtime environment.
+
+![Benchmark details and runtime environment](docs/images/benchmark-details.png)
+
+The WikiSQL playground lets users select a model and validation example, generate
+SQL from natural language, and compare the generated query with the expected
+WikiSQL target.
+
+![WikiSQL playground with a matching SQL generation](docs/images/playground-match.png)
+
+The same playground also exposes mismatches, validity, and execution results so the
+model behavior can be inspected example by example.
+
+![WikiSQL playground with a mismatching SQL generation](docs/images/playground-mismatch.png)
+
 ## Academic Background
 
 This project is based on the work carried out by Antoni Carrasco Martinez and Ivan
