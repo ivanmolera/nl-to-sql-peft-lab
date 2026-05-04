@@ -1,5 +1,18 @@
 # NL-to-SQL PEFT Lab
 
+## Academic Background
+
+This project is based on the work carried out by Antoni Carrasco Martinez and Ivan
+Molera Gomez for their Master's Final Project in Artificial Intelligence at UNIR. The
+original work uses a different set of base models, while this repository adapts the
+experimental direction to small Hugging Face models and a web-based PEFT comparison
+lab for NL-to-SQL.
+
+Original Master's Final Project record:
+https://reunir.unir.net/handle/123456789/19416
+
+## Web App
+
 Parameter-Efficient Fine-Tuning technique comparison for NL-to-SQL on small
 generative models.
 
@@ -23,7 +36,15 @@ latency, BLEU, ROUGE-L, and Token F1, while also allowing users to generate SQL 
 selected WikiSQL natural-language questions using either base models or available
 fine-tuned PEFT adapters.
 
-## Web App Screenshots
+The interactive web app provides:
+
+- A result selector for `zero-shot`, `QLoRA`, `BitFit`, `Prefix Tuning`, and `IA3` benchmark runs.
+- A leaderboard for the selected benchmark metrics.
+- Benchmark charts for execution accuracy, SQL validity, and latency.
+- Benchmark details: sample size, calls per model, total calls, dataset split, seed, and generation limits.
+- Per-model training runtime, resource usage, and estimated Vertex AI training cost in USD and EUR when the PEFT artifact includes those fields.
+- Runtime reproducibility details for the Docker or Cloud Run environment.
+- A WikiSQL playground where users choose a validation example, select a model, generate SQL, and compare it with the expected WikiSQL SQL.
 
 The dashboard compares PEFT techniques across the selected small model suite and
 shows both benchmark quality metrics and training runtime/resource information.
@@ -46,16 +67,19 @@ model behavior can be inspected example by example.
 
 ![WikiSQL playground with a mismatching SQL generation](docs/images/playground-mismatch.png)
 
-## Academic Background
+Run the interactive app locally from the web image:
 
-This project is based on the work carried out by Antoni Carrasco Martinez and Ivan
-Molera Gomez for their Master's Final Project in Artificial Intelligence at UNIR. The
-original work uses a different set of base models, while this repository adapts the
-experimental direction to small Hugging Face models and a web-based PEFT comparison
-lab for NL-to-SQL.
+```bash
+docker run --rm -p 8080:8080 nl-to-sql-peft-lab-app
+```
 
-Original Master's Final Project record:
-https://reunir.unir.net/handle/123456789/19416
+Then open http://localhost:8080.
+
+The first generation request for each model loads that model into memory in the ML API
+service, so it can take longer than later requests. The web app reads real benchmark
+results from `benchmark_results/<mode>/*_wikisql_index.json`. For the zero-shot
+dashboard it falls back to `sample_results/zero_shot_wikisql.demo.json` if no real
+run exists.
 
 ## Setup
 
@@ -345,31 +369,6 @@ the configured infrastructure and the on-demand prices stored in
 `configs/pricing/gcp_vertex_ai_europe_west4.yaml`. Google Cloud prices are kept
 in USD, while EUR values are converted from USD with the fixed ECB reference rate
 stored in the same pricing file.
-
-## Web App
-
-Run the interactive baseline app from the ML image:
-
-```bash
-docker run --rm -p 8080:8080 nl-to-sql-peft-lab-app
-```
-
-Then open http://localhost:8080.
-
-The app provides:
-
-- A result selector for `zero-shot`, `QLoRA`, `BitFit`, `Prefix Tuning`, and `IA3` benchmark runs.
-- A leaderboard for the selected benchmark metrics.
-- Benchmark charts for execution accuracy, SQL validity, and latency.
-- Benchmark details: sample size, calls per model, total calls, dataset split, seed, and generation limits.
-- Per-model training runtime, resource usage, and estimated Vertex AI training cost in USD and EUR when the PEFT artifact includes those fields.
-- Runtime reproducibility details for the Docker or Cloud Run environment.
-- A WikiSQL playground where users choose a validation example, select a model, generate SQL, and compare it with the expected WikiSQL SQL.
-
-The first generation request for each model loads that model into memory in the ML API
-service, so it can take longer than later requests. The web app reads real benchmark results from
-`benchmark_results/<mode>/*_wikisql_index.json`. For the zero-shot dashboard it
-falls back to `sample_results/zero_shot_wikisql.demo.json` if no real run exists.
 
 ## Project Shape
 
