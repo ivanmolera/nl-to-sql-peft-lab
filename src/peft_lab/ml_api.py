@@ -127,6 +127,16 @@ FINE_TUNED_MODEL_SPECS = [
         "adapter_type": "peft",
     },
     {
+        "id": "gpt2-prefix-tuning",
+        "name": "openai-community/gpt2 + Prefix Tuning",
+        "architecture": "causal",
+        "role": "GPT-2 fine-tuned on WikiSQL with Prefix Tuning",
+        "base_model_name": "openai-community/gpt2",
+        "adapter_path": ROOT_DIR / "model_artifacts" / "prefix_tuning" / "gpt2-wikisql-prefix-tuning" / "adapter",
+        "peft_method": "prefix-tuning",
+        "adapter_type": "peft",
+    },
+    {
         "id": "qwen2-5-prefix-tuning",
         "name": "Qwen/Qwen2.5-Coder-0.5B-Instruct + Prefix Tuning",
         "architecture": "causal",
@@ -157,6 +167,16 @@ FINE_TUNED_MODEL_SPECS = [
         "adapter_type": "peft",
     },
     {
+        "id": "gpt2-ia3",
+        "name": "openai-community/gpt2 + IA3",
+        "architecture": "causal",
+        "role": "GPT-2 fine-tuned on WikiSQL with IA3",
+        "base_model_name": "openai-community/gpt2",
+        "adapter_path": ROOT_DIR / "model_artifacts" / "ia3" / "gpt2-wikisql-ia3" / "adapter",
+        "peft_method": "ia3",
+        "adapter_type": "peft",
+    },
+    {
         "id": "smollm2-ia3",
         "name": "HuggingFaceTB/SmolLM2-135M-Instruct + IA3",
         "architecture": "causal",
@@ -168,7 +188,7 @@ FINE_TUNED_MODEL_SPECS = [
     },
 ]
 
-app = FastAPI(title="NL-to-SQL PEFT Lab ML API", version="0.1.2")
+app = FastAPI(title="NL-to-SQL PEFT Lab ML API", version="0.2.0")
 
 
 @dataclass

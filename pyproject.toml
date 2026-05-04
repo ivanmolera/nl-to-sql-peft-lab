@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nl-to-sql-peft-lab"
-version = "0.1.2"
+version = "0.2.0"
 description = "Comparativa de tecnicas PEFT para NL-to-SQL en modelos generativos pequenos."
 readme = "README.md"
 requires-python = ">=3.10"

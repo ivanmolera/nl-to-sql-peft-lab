@@ -1,0 +1,21 @@
+{
+  "auto_mapping": null,
+  "base_model_name_or_path": "openai-community/gpt2",
+  "exclude_modules": null,
+  "fan_in_fan_out": true,
+  "feedforward_modules": [
+    "c_fc"
+  ],
+  "inference_mode": true,
+  "init_ia3_weights": true,
+  "modules_to_save": null,
+  "peft_type": "IA3",
+  "peft_version": "0.19.1",
+  "revision": null,
+  "target_modules": [
+    "c_fc",
+    "c_attn",
+    "c_proj"
+  ],
+  "task_type": "CAUSAL_LM"
+}

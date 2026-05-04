@@ -85,6 +85,12 @@ const TRAINABLE_PARAMETER_FALLBACKS = {
     bitfit: 0,
     "prefix-tuning": 230_400,
   },
+  gpt2: {
+    qlora: 1_622_016,
+    bitfit: 102_144,
+    "prefix-tuning": 14_780_160,
+    ia3: 55_296,
+  },
   "qwen2.5-coder-0.5b-instruct": {
     qlora: 1_081_344,
     bitfit: 27_648,
