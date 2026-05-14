@@ -19,7 +19,7 @@ generative models.
 NL-to-SQL PEFT Lab is a reproducible experimentation platform for evaluating how
 parameter-efficient fine-tuning techniques affect small language models on the
 WikiSQL text-to-SQL task. It combines training pipelines, benchmark scripts, stored
-evaluation artifacts, and a web dashboard where users can compare results and test
+evaluation artifacts, and a [web dashboard](https://nl-to-sql-peft-lab-kptsge5znq-ew.a.run.app/) where users can compare results and test
 trained variants on real WikiSQL examples.
 
 The model suite includes `google-t5/t5-small`, `openai-community/gpt2`,
